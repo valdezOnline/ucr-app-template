@@ -1,0 +1,80 @@
+services:
+  apptemplate:
+    image: local/app-apptemplate-php:8.4
+    build: 
+      context: .
+      dockerfile: php.Dockerfile
+    container_name: app-apptemplate
+    working_dir: /workspaces/app-apptemplate
+    #command: sh -lc "php artisan serve --host=0.0.0.0 --port=8000"
+    command: >
+      sh -lc "
+      i=0;
+      until nc -z \"$$DB_HOST\" \"$$DB_PORT\"; do
+        i=$$((i+1));
+        if [ $$i -ge 30 ]; then
+          echo 'MySQL not ready after waiting 60 seconds; starting app anyway.';
+          break;
+        fi;
+        echo 'Waiting for MySQL...';
+        sleep 2;
+      done;
+      composer install --no-interaction --prefer-dist;
+      php artisan serve --host=0.0.0.0 --port=8000
+      "
+    env_file:
+      - .env
+    ports:
+      - "${APPTEMPLATE_HOST_PORT:-19000}:8000"
+    volumes:            
+      #- ./:/workspace/app-time-tracker
+      # Use the configuration below if running this docker-compose from another computer...
+      # Use the APP_HOST_PATH environment variable if set, otherwise default to the current directory.
+      - ${APP_HOST_PATH:-.}:/workspaces/app-apptemplate
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://apptemplate.localhost:${APPTEMPLATE_HOST_PORT:-19000}
+      DB_CONNECTION: mysql
+      DB_HOST: db-mysql
+      DB_PORT: "3306"
+      DB_DATABASE: app_template
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      techstack:
+        aliases:
+          - apptemplate
+      db:
+        aliases:
+          - techstack-db
+
+  vite:
+    image: node:22-alpine
+    container_name: app-apptemplate-vite
+    working_dir: /workspaces/app-apptemplate
+    #command: sh -lc "npm run dev -- --host 0.0.0.0 --port 5173"
+    command: sh -lc "if [ ! -x node_modules/.bin/vite ]; then npm ci || npm install; fi; npm run dev -- --host 0.0.0.0 --port 6173"
+    ports:
+      - "16173:6173"
+    volumes:
+    #  - ./:/workspace/app-apptemplate
+    # Use the configuration below if running this docker-compose from another computer...
+      # Use the APP_HOST_PATH environment variable if set, otherwise default to the current directory.
+      - ${APP_HOST_PATH:-.}:/workspaces/app-apptemplate
+      - vite_node_modules:/workspaces/app-apptemplate/node_modules
+    networks:
+      - techstack
+
+volumes:
+  vite_node_modules:
+
+networks:
+  techstack:
+    external: true
+    name: techstack-devenv_default
+  db:
+    external: true
+    name: db-devenv_default
