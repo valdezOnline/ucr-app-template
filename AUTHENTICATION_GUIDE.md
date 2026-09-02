@@ -48,12 +48,15 @@ AUTH_TYPE=cas
 **Note:** When using CAS authentication, ensure your CAS configuration is properly set up in the `.env` file:
 
 ```env
-CAS_HOSTNAME=https://your-cas-server.com/cas
+CAS_HOSTNAME=your-cas-server.com
+CAS_URI=/cas
 CAS_CLIENT_SERVICE=https://your-app-domain.com/
 CAS_LOGOUT_URL=https://your-cas-server.com/cas/logout
 CAS_LOGOUT_REDIRECT=https://your-app-domain.com/
 # ... other CAS configuration options
 ```
+
+`CAS_HOSTNAME` should be the host only. Put the CAS path in `CAS_URI`.
 
 ## Features by Authentication Type
 

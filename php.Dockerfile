@@ -15,6 +15,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP drivers and image support required by Laravel and QR code generation.
+# pdo_mysql is required for Laravel database sessions/auth flows in this app.
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-xpm \
     && docker-php-ext-install pdo_mysql gd
 

@@ -59,10 +59,12 @@ class AuthenticationTypeMiddleware
                         return $next($request);
                     }
 
-                    // Ignore invalid masquerade users and continue with normal CAS authentication flow.
-                    Log::warning("CAS masquerade user not found or inactive; falling back to normal CAS flow", ['net_id' => $masqueradeUser]);
-                    config(['cas.cas_masquerade' => null]);
-                    session()->forget('cas_user');
+                    // In masquerade mode we should never call real CAS endpoints.
+                    Log::warning("CAS masquerade user not found or inactive; blocking CAS fallback", ['net_id' => $masqueradeUser]);
+                    return redirect()->route('login')->with(
+                        'error',
+                        'CAS masquerade user does not have access to the system or was not found or is inactive.'
+                    );
                 }
             }
 

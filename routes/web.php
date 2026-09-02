@@ -152,9 +152,11 @@ Route::get('/cas/login', function () {
             return redirect()->intended(route('dashboard')); // User dashboard
         }
 
-        Log::warning("CAS Login Route: Masquerade user not found or inactive; falling back to normal CAS flow", ['net_id' => $netId]);
-        config(['cas.cas_masquerade' => null]);
-        session()->forget('cas_user');
+        Log::warning("CAS Login Route: Masquerade user not found or inactive; blocking CAS fallback", ['net_id' => $netId]);
+        return redirect()->route('login')->with(
+            'error',
+            'CAS masquerade user does not have access to the system or was not found or is inactive.'
+        );
     }
 
     // Check if CAS is available for non-masquerade mode

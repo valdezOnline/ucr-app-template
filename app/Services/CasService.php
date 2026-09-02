@@ -10,6 +10,109 @@ class CasService
     protected static $initialized = false;
 
     /**
+     * Resolve CAS connection values from mixed configuration formats.
+     *
+     * Supports either:
+     * - CAS_HOSTNAME=cas.example.edu with CAS_URI=/cas
+     * - CAS_HOSTNAME=https://cas.example.edu/cas
+     * - CAS_HOSTNAME=cas.example.edu/cas
+     */
+    protected static function resolveCasConnectionConfig(): array
+    {
+        $rawHostname = trim((string) config('cas.cas_hostname', ''));
+        $configuredUri = trim((string) config('cas.cas_uri', '/cas'));
+        $configuredPort = (int) config('cas.cas_port', 443);
+
+        $hostname = $rawHostname;
+        $port = $configuredPort;
+        $uriFromHost = '';
+
+        $resolvePathFromEndpoint = static function (string $endpoint, string $suffix): string {
+            $endpoint = trim($endpoint);
+            if ($endpoint === '') {
+                return '';
+            }
+
+            $urlCandidate = str_contains($endpoint, '://') ? $endpoint : 'https://' . ltrim($endpoint, '/');
+            $parts = parse_url($urlCandidate);
+
+            if (!is_array($parts) || empty($parts['path'])) {
+                return '';
+            }
+
+            $path = $parts['path'];
+            if (str_ends_with($path, $suffix)) {
+                $path = substr($path, 0, -strlen($suffix));
+            }
+
+            if ($path === '') {
+                return '';
+            }
+
+            return str_starts_with($path, '/') ? $path : '/' . $path;
+        };
+
+        if ($rawHostname !== '' && (str_contains($rawHostname, '://') || str_contains($rawHostname, '/'))) {
+            $urlCandidate = str_contains($rawHostname, '://') ? $rawHostname : 'https://' . $rawHostname;
+            $parts = parse_url($urlCandidate);
+
+            if (is_array($parts)) {
+                if (!empty($parts['host'])) {
+                    $hostname = $parts['host'];
+                }
+
+                if (!empty($parts['port'])) {
+                    $port = (int) $parts['port'];
+                }
+
+                if (!empty($parts['path']) && $parts['path'] !== '/') {
+                    $uriFromHost = $parts['path'];
+                }
+            }
+        }
+
+        $uri = $configuredUri;
+
+        $loginUriBase = $resolvePathFromEndpoint((string) config('cas.cas_login_url', ''), '/login');
+        $logoutUriBase = $resolvePathFromEndpoint((string) config('cas.cas_logout_url', ''), '/logout');
+
+        // If CAS_URI is left as default or empty, infer the most specific configured CAS base path.
+        if (($configuredUri === '' || $configuredUri === '/cas') && $uriFromHost !== '') {
+            $uri = $uriFromHost;
+
+            // Some setups provide hostname up to /protocol while endpoints include /protocol/cas/*.
+            // Prefer explicit endpoint-derived path when it includes /cas and hostname path does not.
+            if (!str_contains($uriFromHost, '/cas')) {
+                if ($loginUriBase !== '' && str_contains($loginUriBase, '/cas')) {
+                    $uri = $loginUriBase;
+                } elseif ($logoutUriBase !== '' && str_contains($logoutUriBase, '/cas')) {
+                    $uri = $logoutUriBase;
+                }
+            }
+        } elseif ($configuredUri === '' || $configuredUri === '/cas') {
+            if ($loginUriBase !== '') {
+                $uri = $loginUriBase;
+            } elseif ($logoutUriBase !== '') {
+                $uri = $logoutUriBase;
+            }
+        }
+
+        if ($uri === '') {
+            $uri = '/cas';
+        }
+
+        if (!str_starts_with($uri, '/')) {
+            $uri = '/' . $uri;
+        }
+
+        return [
+            'hostname' => $hostname,
+            'port' => $port,
+            'uri' => $uri,
+        ];
+    }
+
+    /**
      * Initialize phpCAS client
      */
     public static function initialize(): void
@@ -18,12 +121,27 @@ class CasService
             return;
         }
 
+        if (self::isMasquerading()) {
+            if (!self::hasValidMasqueradeUser()) {
+                Log::warning('CasService: CAS masquerade is enabled, but the configured user is missing or inactive; real CAS login is skipped.', [
+                    'net_id' => config('cas.cas_masquerade'),
+                    'cas_hostname' => config('cas.cas_hostname'),
+                    'cas_uri' => config('cas.cas_uri'),
+                ]);
+            } else {
+                Log::debug('CasService: Skipping phpCAS initialization in masquerade mode');
+            }
+            return;
+        }
+
+        $connection = self::resolveCasConnectionConfig();
+
         // Initialize phpCAS
         \phpCAS::client(
             CAS_VERSION_2_0, // or use config('cas.cas_version')
-            config('cas.cas_hostname'),
-            (int) config('cas.cas_port', 443),
-            config('cas.cas_uri', '/cas'),
+            $connection['hostname'],
+            $connection['port'],
+            $connection['uri'],
             config('cas.cas_client_service', false) // service_base_url parameter
         );
 
@@ -66,6 +184,11 @@ class CasService
     public static function checkAuthentication(): bool
     {
         Log::debug('CasService: Checking CAS authentication status');
+
+        if (self::isMasquerading()) {
+            return !empty(self::getMasqueradeUser());
+        }
+
         try {
             self::initialize();
             // Log::debug('CasService: CAS initialized successfully');
@@ -82,6 +205,10 @@ class CasService
      */
     public static function isAuthenticatedFromSession(): bool
     {
+        if (self::isMasquerading()) {
+            return !empty(self::getMasqueradeUser());
+        }
+
         try {
             self::initialize();
             // Check if phpCAS has a valid authenticated session
@@ -100,6 +227,11 @@ class CasService
     public static function forceAuthentication(): void
     {
         Log::debug('CasService: Forcing CAS authentication');
+
+        if (self::isMasquerading()) {
+            return;
+        }
+
         try {
             self::initialize();
             Log::debug('CasService: CAS initialized successfully');
@@ -116,6 +248,11 @@ class CasService
     public static function forceAuthenticationWithReturnService($clientService): void
     {
         Log::debug('CasService: Forcing CAS authentication');
+
+        if (self::isMasquerading()) {
+            return;
+        }
+
         try {
             self::initialize();
             Log::debug('CasService: CAS initialized successfully');
@@ -133,6 +270,11 @@ class CasService
     public static function user(): ?string
     {
         Log::debug('CasService: Checking CAS user');
+
+        if (self::isMasquerading()) {
+            return self::getMasqueradeUser();
+        }
+
         try {
             self::initialize();
             if (\phpCAS::checkAuthentication()) {
@@ -151,6 +293,10 @@ class CasService
      */
     public static function attributes(): array
     {
+        if (self::isMasquerading()) {
+            return [];
+        }
+
         try {
             self::initialize();
             if (\phpCAS::checkAuthentication()) {
@@ -168,6 +314,10 @@ class CasService
      */
     public static function logout(string $redirectUrl = ''): void
     {
+        if (self::isMasquerading()) {
+            return;
+        }
+
         try {
             self::initialize();
             if ($redirectUrl) {
@@ -186,6 +336,10 @@ class CasService
      */
     public static function getServerLoginURL(): string
     {
+        if (self::isMasquerading()) {
+            return '';
+        }
+
         try {
             self::initialize();
             return \phpCAS::getServerLoginURL();
@@ -200,6 +354,10 @@ class CasService
      */
     public static function getServerLogoutURL(): string
     {
+        if (self::isMasquerading()) {
+            return '';
+        }
+
         try {
             self::initialize();
             return \phpCAS::getServerLogoutURL();
@@ -214,6 +372,10 @@ class CasService
      */
     public static function isAvailable(): bool
     {
+        if (self::isMasquerading()) {
+            return true;
+        }
+
         $hostname = config('cas.cas_hostname');
         return !empty($hostname) && $hostname !== 'cas.myuniv.edu';
     }
@@ -224,6 +386,23 @@ class CasService
     public static function isMasquerading(): bool
     {
         return !empty(config('cas.cas_masquerade'));
+    }
+
+    /**
+     * Check whether the configured masquerade user exists and is active.
+     */
+    public static function hasValidMasqueradeUser(): bool
+    {
+        $netId = trim((string) config('cas.cas_masquerade', ''));
+
+        if ($netId === '') {
+            return false;
+        }
+
+        return \App\Models\User::query()
+            ->whereRaw('net_id = ?', [$netId])
+            ->where('is_active', true)
+            ->exists();
     }
 
     /**
