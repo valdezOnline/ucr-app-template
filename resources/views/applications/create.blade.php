@@ -314,6 +314,50 @@
                                             </div>
                                         </div>
 
+                                        <hr>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="external_auth_enabled"
+                                                    name="external_auth_enabled" value="1"
+                                                    {{ old('external_auth_enabled') ? 'checked' : '' }}
+                                                    onchange="toggleExternalAuthFields()">
+                                                <label class="form-check-label" for="external_auth_enabled">
+                                                    <i class="fas fa-right-left me-1"></i>Enable External CAS Broker Flow
+                                                </label>
+                                                <div class="form-text">
+                                                    Allows external apps to initiate CAS login through this app and exchange
+                                                    authorization code for API token.
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="external-auth-fields" style="display: none;">
+                                            <div class="mb-3">
+                                                <label for="external_auth_callback_url" class="form-label">
+                                                    <i class="fas fa-link me-1"></i>External Callback URL <span
+                                                        class="text-danger">*</span>
+                                                </label>
+                                                <input type="url"
+                                                    class="form-control @error('external_auth_callback_url') is-invalid @enderror"
+                                                    id="external_auth_callback_url" name="external_auth_callback_url"
+                                                    value="{{ old('external_auth_callback_url') }}"
+                                                    placeholder="https://external.app-template.com/callback">
+                                                @error('external_auth_callback_url')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                                <div class="form-text">
+                                                    Must exactly match the callback URL used by the external application.
+                                                </div>
+                                            </div>
+
+                                            <div class="alert alert-warning">
+                                                <i class="fas fa-shield-alt me-2"></i>
+                                                <strong>Security:</strong> Do not include wildcard callback URLs. Tokens are
+                                                never returned in browser redirects.
+                                            </div>
+                                        </div>
+
                                         <div class="alert alert-info">
                                             <i class="fas fa-lightbulb me-2"></i>
                                             <strong>Note:</strong> After creating the application with API authentication
@@ -362,6 +406,7 @@
         function toggleApiFields() {
             const apiAuthEnabled = document.getElementById('supports_api_auth').checked;
             const apiFields = document.getElementById('api-fields');
+            const externalEnabled = document.getElementById('external_auth_enabled');
 
             if (apiAuthEnabled) {
                 apiFields.style.display = 'block';
@@ -371,6 +416,36 @@
                 document.getElementById('generate_credentials').checked = false;
                 document.getElementById('api_key_expires_at').value = '';
                 document.getElementById('allowed_domains').value = '';
+                if (externalEnabled) {
+                    externalEnabled.checked = false;
+                }
+                const callbackInput = document.getElementById('external_auth_callback_url');
+                if (callbackInput) {
+                    callbackInput.value = '';
+                }
+            }
+
+            toggleExternalAuthFields();
+        }
+
+        function toggleExternalAuthFields() {
+            const apiAuthEnabled = document.getElementById('supports_api_auth').checked;
+            const externalEnabled = document.getElementById('external_auth_enabled').checked;
+            const externalFields = document.getElementById('external-auth-fields');
+            const callbackInput = document.getElementById('external_auth_callback_url');
+
+            if (!apiAuthEnabled) {
+                externalFields.style.display = 'none';
+                callbackInput.required = false;
+                return;
+            }
+
+            if (externalEnabled) {
+                externalFields.style.display = 'block';
+                callbackInput.required = true;
+            } else {
+                externalFields.style.display = 'none';
+                callbackInput.required = false;
             }
         }
 
@@ -423,6 +498,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             toggleUrlFields();
             toggleApiFields();
+            toggleExternalAuthFields();
 
             // Add event listeners for preview updates
             document.getElementById('base_domain').addEventListener('input', updateUrlPreview);

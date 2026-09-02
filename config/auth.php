@@ -124,4 +124,22 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | External Broker Authentication
+    |--------------------------------------------------------------------------
+    |
+    | Settings for external applications that delegate browser authentication
+    | to this app and exchange an authorization code for a Sanctum token.
+    |
+    */
+
+    'external_broker' => [
+        'enabled' => env('EXTERNAL_AUTH_BROKER_ENABLED', true),
+        'authorization_ttl_minutes' => env('EXTERNAL_AUTH_BROKER_AUTH_TTL', 10),
+        'code_ttl_minutes' => env('EXTERNAL_AUTH_BROKER_CODE_TTL', 5),
+        'require_https_redirects' => env('EXTERNAL_AUTH_BROKER_REQUIRE_HTTPS', true),
+        'cleanup_retention_hours' => env('EXTERNAL_AUTH_BROKER_CLEANUP_RETENTION_HOURS', 24),
+    ],
+
 ];
