@@ -26,3 +26,4 @@ Thumbs.db
 docker-compose.override.yml
 docker-compose.yml
 php.Dockerfile
+_ide_*.php

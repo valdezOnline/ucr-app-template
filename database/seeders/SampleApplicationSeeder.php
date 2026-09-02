@@ -15,12 +15,12 @@ class SampleApplicationSeeder extends Seeder
     public function run(): void
     {
         // Get the first admin user to assign as creator
-        $adminUser = User::where('email', 'like', '%admin%')->orWhere('net_id', 'like', '%admin%')->first();
+        $adminUser = User::firstWhere('email', 'like', '%admin%')->orWhere('net_id', 'like', '%admin%')->first();
         $createdBy = $adminUser ? $adminUser->id : 1;
 
         // Get some roles for assignment
-        $adminRole = Role::where('name', 'admin')->first();
-        $managerRole = Role::where('name', 'manager')->first();
+        $adminRole = Role::firstWhere('name', 'admin');
+        $managerRole = Role::firstWhere('name', 'manager');
 
         // Create sample applications with different URL types
 
