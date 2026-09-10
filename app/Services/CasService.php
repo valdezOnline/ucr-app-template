@@ -10,6 +10,36 @@ class CasService
     protected static $initialized = false;
 
     /**
+     * Read user identity from phpCAS session state without making a CAS server call.
+     */
+    protected static function getSessionCasUser(): ?string
+    {
+        if (!isset($_SESSION) || !is_array($_SESSION)) {
+            return null;
+        }
+
+        // phpCAS commonly stores data under phpCAS, but keep fallbacks for custom session names.
+        $possibleSessionKeys = [
+            'phpCAS',
+            (string) config('cas.cas_session_name', 'CASAuth'),
+            'CASAuth',
+        ];
+
+        foreach ($possibleSessionKeys as $sessionKey) {
+            if ($sessionKey === '' || !isset($_SESSION[$sessionKey]) || !is_array($_SESSION[$sessionKey])) {
+                continue;
+            }
+
+            $candidate = $_SESSION[$sessionKey]['user'] ?? null;
+            if (is_string($candidate) && trim($candidate) !== '') {
+                return trim($candidate);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Resolve CAS connection values from mixed configuration formats.
      *
      * Supports either:
@@ -211,14 +241,45 @@ class CasService
 
         try {
             self::initialize();
-            // Check if phpCAS has a valid authenticated session
-            // We check the internal phpCAS session state without making a server call
-            return isset($_SESSION['phpCAS']) &&
-                isset($_SESSION['phpCAS']['user']) &&
-                !empty($_SESSION['phpCAS']['user']);
+            return self::getSessionCasUser() !== null;
         } catch (\Exception $e) {
             Log::error('CAS session authentication check error: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Resolve authenticated CAS user, preferring local session then optional CAS ticket validation.
+     */
+    public static function authenticatedUser(bool $allowServerCheck = true): ?string
+    {
+        if (self::isMasquerading()) {
+            return self::getMasqueradeUser();
+        }
+
+        try {
+            self::initialize();
+
+            $sessionUser = self::getSessionCasUser();
+            if ($sessionUser !== null) {
+                return $sessionUser;
+            }
+
+            if (!$allowServerCheck) {
+                return null;
+            }
+
+            if (\phpCAS::checkAuthentication()) {
+                $casUser = \phpCAS::getUser();
+                if (is_string($casUser) && trim($casUser) !== '') {
+                    return trim($casUser);
+                }
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('CAS authenticatedUser resolution error: ' . $e->getMessage());
+            return null;
         }
     }
     /**

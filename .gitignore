@@ -9,6 +9,7 @@
 /.idea
 /.nova
 /.phpunit.cache
+/.scripts
 /.vscode
 /.zed
 /auth.json
