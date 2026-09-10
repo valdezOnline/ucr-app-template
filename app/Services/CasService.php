@@ -10,6 +10,36 @@ class CasService
     protected static $initialized = false;
 
     /**
+     * Read user identity from phpCAS session state without making a CAS server call.
+     */
+    protected static function getSessionCasUser(): ?string
+    {
+        if (!isset($_SESSION) || !is_array($_SESSION)) {
+            return null;
+        }
+
+        // phpCAS commonly stores data under phpCAS, but keep fallbacks for custom session names.
+        $possibleSessionKeys = [
+            'phpCAS',
+            (string) config('cas.cas_session_name', 'CASAuth'),
+            'CASAuth',
+        ];
+
+        foreach ($possibleSessionKeys as $sessionKey) {
+            if ($sessionKey === '' || !isset($_SESSION[$sessionKey]) || !is_array($_SESSION[$sessionKey])) {
+                continue;
+            }
+
+            $candidate = $_SESSION[$sessionKey]['user'] ?? null;
+            if (is_string($candidate) && trim($candidate) !== '') {
+                return trim($candidate);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Resolve CAS connection values from mixed configuration formats.
      *
      * Supports either:
@@ -156,9 +186,27 @@ class CasService
             \phpCAS::setNoCasServerValidation();
         }
 
-        // Set service URL if specified
-        if (config('cas.cas_client_service')) {
-            \phpCAS::setFixedServiceURL(config('cas.cas_client_service'));
+        // Set fixed service URL.
+        // Critical: when returning from CAS with a ticket, service must match the callback URL
+        // used during forceAuthentication(), otherwise CAS ticket validation will fail.
+        $fixedServiceUrl = trim((string) config('cas.cas_client_service', ''));
+        if (!app()->runningInConsole()) {
+            try {
+                if (request()->has('ticket')) {
+                    $fixedServiceUrl = request()->url();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('CasService: Unable to inspect request for ticket while setting fixed service URL', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if ($fixedServiceUrl !== '') {
+            \phpCAS::setFixedServiceURL($fixedServiceUrl);
+            Log::debug('CasService: Fixed service URL configured', [
+                'service_url' => $fixedServiceUrl,
+            ]);
         }
 
         // Enable debug mode if configured
@@ -211,14 +259,56 @@ class CasService
 
         try {
             self::initialize();
-            // Check if phpCAS has a valid authenticated session
-            // We check the internal phpCAS session state without making a server call
-            return isset($_SESSION['phpCAS']) &&
-                isset($_SESSION['phpCAS']['user']) &&
-                !empty($_SESSION['phpCAS']['user']);
+            return self::getSessionCasUser() !== null;
         } catch (\Exception $e) {
             Log::error('CAS session authentication check error: ' . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Resolve authenticated CAS user, preferring local session then optional CAS ticket validation.
+     */
+    public static function authenticatedUser(bool $allowServerCheck = true): ?string
+    {
+        if (self::isMasquerading()) {
+            return self::getMasqueradeUser();
+        }
+
+        try {
+            self::initialize();
+
+            $sessionUser = self::getSessionCasUser();
+            if ($sessionUser !== null) {
+                return $sessionUser;
+            }
+
+            if (!$allowServerCheck) {
+                return null;
+            }
+
+            Log::debug('CasService: Attempting CAS server authentication check for user resolution', [
+                'has_ticket' => app()->runningInConsole() ? false : request()->has('ticket'),
+                'request_url' => app()->runningInConsole() ? null : request()->fullUrl(),
+            ]);
+
+            if (\phpCAS::checkAuthentication()) {
+                $casUser = \phpCAS::getUser();
+                if (is_string($casUser) && trim($casUser) !== '') {
+                    Log::debug('CasService: CAS server authentication check returned user', [
+                        'net_id' => trim($casUser),
+                    ]);
+                    return trim($casUser);
+                }
+            }
+
+            Log::warning('CasService: CAS server authentication check did not return a user', [
+                'has_ticket' => app()->runningInConsole() ? false : request()->has('ticket'),
+            ]);
+            return null;
+        } catch (\Throwable $e) {
+            Log::error('CAS authenticatedUser resolution error: ' . $e->getMessage());
+            return null;
         }
     }
     /**

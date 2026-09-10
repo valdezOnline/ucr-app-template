@@ -131,7 +131,13 @@ Route::get('/cas/login', function () {
         'session_data' => [
             'cas_user' => session('cas_user'),
             'intended_url' => session('url.intended')
-        ]
+        ],
+        'request' => [
+            'full_url' => request()->fullUrl(),
+            'has_ticket' => request()->has('ticket'),
+            'scheme' => request()->getScheme(),
+            'host' => request()->getHost(),
+        ],
     ]);
 
     // Handle masquerade mode first
@@ -165,72 +171,79 @@ Route::get('/cas/login', function () {
     }
 
     try {
-        // Check if already authenticated before forcing authentication
-        if (cas()->isAuthenticatedFromSession()) {
-            $netId = cas()->user();
-            if ($netId) {
-                session(['cas_user' => $netId]);
-                Log::info("CAS Login Route: User already authenticated", [
-                    'net_id' => $netId
-                ]);
+        Log::info('CAS Login Route: Resolving authenticated user', [
+            'has_ticket' => request()->has('ticket'),
+        ]);
 
-                // Find and authenticate the user
-                $user = App\Models\User::where('net_id', $netId)->first();
-                if ($user && $user->is_active) {
-                    Auth::login($user);
+        // Resolve user first from local phpCAS session; if ticket exists, validate with CAS server.
+        $netId = \App\Services\CasService::authenticatedUser(request()->has('ticket'));
 
-                    if ($user->hasRole('admin') || $user->is_admin) {
-                        return redirect()->intended(route('home')); // Admin dashboard
-                    }
-                    return redirect()->intended(route('dashboard')); // User dashboard
-                } else {
-                    Log::warning("CAS Login Route: User not found or inactive", ['net_id' => $netId]);
-                    return redirect()->route('login')->with('error', 'User account not found or inactive.');
+        Log::info('CAS Login Route: Authenticated user resolution completed', [
+            'has_ticket' => request()->has('ticket'),
+            'net_id_present' => !empty($netId),
+        ]);
+
+        if ($netId) {
+            session(['cas_user' => $netId]);
+            Log::info("CAS Login Route: User authenticated", [
+                'net_id' => $netId,
+                'source' => request()->has('ticket') ? 'ticket_or_session' : 'session',
+            ]);
+
+            // Find and authenticate the user
+            $user = App\Models\User::where('net_id', $netId)->first();
+            if ($user && $user->is_active) {
+                Auth::login($user);
+
+                if ($user->hasRole('admin') || $user->is_admin) {
+                    return redirect()->intended(route('home')); // Admin dashboard
                 }
+                return redirect()->intended(route('dashboard')); // User dashboard
             }
+
+            Log::warning("CAS Login Route: User authenticated via CAS but not authorized locally", ['net_id' => $netId]);
+            return redirect()->route('login')->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
         }
 
         Log::info("CAS Login Route: User not authenticated, forcing CAS authentication");
 
+        // Always return to this route after CAS so we can complete Laravel auth/session setup.
+        $returnService = route('cas.login');
+        if (request()->isSecure() && str_starts_with($returnService, 'http://')) {
+            $returnService = 'https://' . substr($returnService, 7);
+        }
+        Log::info("CAS Login Route: Forcing CAS authentication with callback service", [
+            'service' => $returnService,
+        ]);
+
         // Force CAS authentication - this will redirect to CAS server
-        cas()->forceAuthentication();
+        cas()->forceAuthenticationWithReturnService($returnService);
 
         // This should not be reached if CAS redirects properly
         Log::info("CAS Login Route: Force authentication returned without redirect - checking auth status");
 
-        // Double-check authentication after force
-        if (cas()->isAuthenticatedFromSession()) {
-            $netId = cas()->user();
-            if ($netId) {
-                session(['cas_user' => $netId]);
-                Log::info("CAS Login Route: Authentication successful after force", [
-                    'net_id' => $netId
-                ]);
+        // Double-check authentication after force (defensive fallback)
+        $netId = \App\Services\CasService::authenticatedUser(true);
+        if ($netId) {
+            session(['cas_user' => $netId]);
+            Log::info("CAS Login Route: Authentication successful after force", [
+                'net_id' => $netId
+            ]);
 
-                // // Handle QR check-in flow redirection
-                // if (session('qr_checkin_flow') && session('qr_checkin_token')) {
-                //     $token = session('qr_checkin_token');
-                //     Log::info("CAS Login Route: Redirecting to QR check-in after CAS authentication", [
-                //         'token' => $token,
-                //         'net_id' => $netId
-                //     ]);
-                //     session()->forget(['qr_checkin_flow', 'qr_checkin_token']);
-                //     return redirect()->route('events.qr-checkin', $token);
-                // }
-
-                // Route to appropriate dashboard based on user role
-                $user = App\Models\User::where('net_id', $netId)->first();
-                if ($user && ($user->hasRole('admin') || $user->is_admin)) {
-                    return redirect()->intended(route('home')); // Admin dashboard
-                }
-
-                return redirect()->intended(route('dashboard')); // User dashboard
+            // Route to appropriate dashboard based on user role
+            $user = App\Models\User::where('net_id', $netId)->first();
+            if ($user && ($user->hasRole('admin') || $user->is_admin)) {
+                return redirect()->intended(route('home')); // Admin dashboard
             }
-        }            // If we reach here, authentication failed
+
+            return redirect()->intended(route('dashboard')); // User dashboard
+        }
+
+        // If we reach here, authentication failed
         Log::warning("CAS Login Route: Authentication completed but no user ID returned");
         return redirect()->route('login')->with('error', 'CAS authentication failed to return user information.');
 
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         Log::error('CAS Login Route: Authentication error: ' . $e->getMessage());
         return redirect()->route('login')->with('error', 'CAS authentication failed. Please try again.');
     }
