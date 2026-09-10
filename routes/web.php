@@ -201,8 +201,8 @@ Route::get('/cas/login', function () {
                 return redirect()->intended(route('dashboard')); // User dashboard
             }
 
-            Log::warning("CAS Login Route: User not found or inactive", ['net_id' => $netId]);
-            return redirect()->route('login')->with('error', 'User account not found or inactive.');
+            Log::warning("CAS Login Route: User authenticated via CAS but not authorized locally", ['net_id' => $netId]);
+            return redirect()->route('login')->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
         }
 
         Log::info("CAS Login Route: User not authenticated, forcing CAS authentication");

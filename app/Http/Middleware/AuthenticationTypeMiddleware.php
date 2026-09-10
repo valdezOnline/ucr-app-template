@@ -86,13 +86,13 @@ class AuthenticationTypeMiddleware
                                 'has_ticket' => $request->has('ticket'),
                             ]);
                         } else {
-                            Log::warning("CAS user not found or inactive", ['net_id' => $netId]);
+                            Log::warning("CAS user authenticated but not authorized locally", ['net_id' => $netId]);
 
                             if (AuthenticationService::isCasAuth()) {
-                                return redirect()->route(AuthenticationService::getLoginRouteName())->with('error', 'User account not found or inactive.');
+                                return redirect()->route(AuthenticationService::getLoginRouteName())->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
                             }
 
-                            return redirect()->route('login')->with('error', 'User account not found or inactive.');
+                            return redirect()->route('login')->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
                         }
                     }
                 }
