@@ -115,7 +115,7 @@ class AuthenticationTypeMiddleware
             // For protected routes, redirect to appropriate login
             return redirect()->route(AuthenticationService::getLoginRouteName());
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('CAS authentication middleware error: ' . $e->getMessage());
             return $next($request);
         }

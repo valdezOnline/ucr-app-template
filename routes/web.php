@@ -171,8 +171,17 @@ Route::get('/cas/login', function () {
     }
 
     try {
+        Log::info('CAS Login Route: Resolving authenticated user', [
+            'has_ticket' => request()->has('ticket'),
+        ]);
+
         // Resolve user first from local phpCAS session; if ticket exists, validate with CAS server.
         $netId = \App\Services\CasService::authenticatedUser(request()->has('ticket'));
+
+        Log::info('CAS Login Route: Authenticated user resolution completed', [
+            'has_ticket' => request()->has('ticket'),
+            'net_id_present' => !empty($netId),
+        ]);
 
         if ($netId) {
             session(['cas_user' => $netId]);
@@ -234,7 +243,7 @@ Route::get('/cas/login', function () {
         Log::warning("CAS Login Route: Authentication completed but no user ID returned");
         return redirect()->route('login')->with('error', 'CAS authentication failed to return user information.');
 
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         Log::error('CAS Login Route: Authentication error: ' . $e->getMessage());
         return redirect()->route('login')->with('error', 'CAS authentication failed. Please try again.');
     }
