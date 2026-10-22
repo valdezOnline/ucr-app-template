@@ -7,10 +7,12 @@ APP_DIR := /workspaces/app-apptemplate
 WORKING_DIR := $(shell pwd)
 COMPOSE_FILE := $(WORKING_DIR)/docker-compose.yml
 # Mirror path used when Docker cannot read WORKING_DIR directly (e.g., fuse mounts).
-MIRROR_HOST_PATH ?= $(HOME)/workspaces/app-template-linux
+MIRROR_HOST_PATH ?= $(HOME)/workspace/app-template-linux
 PROBE_IMAGE ?= alpine:3.20
 USER_UID := $(shell id -u)
 USER_GID := $(shell id -g)
+CHAT_PROJECT ?= $(notdir $(CURDIR))
+CHAT_NOTES_DIR ?= $(HOME)/session-notes/$(CHAT_PROJECT)
 
 define sync_to_mirror
 mkdir -p "$(MIRROR_HOST_PATH)"; \
@@ -34,7 +36,7 @@ fi
 endef
 
 
-.PHONY: help up down restart ps logs logs-app logs-vite migrate fresh seed shell app-shell vite-shell composer-install npm-install phpunit assets-fix clear-hot health-check aliases alias-artisan alias-php sync probe-host-path
+.PHONY: help up down restart ps logs logs-app logs-vite migrate fresh seed shell app-shell vite-shell composer-install npm-install phpunit assets-fix clear-hot health-check aliases alias-artisan alias-php sync probe-host-path save-chat save-chat-quick save-chat-debug
 
 help:
 	@echo "Targets:"
@@ -57,6 +59,11 @@ help:
 	@echo "  make health-check    - show active Docker mount source and Vite hot URL"
 	@echo "  make sync            - sync repo to mirror path for Docker fallback"
 	@echo "  make probe-host-path - print the host path Docker compose will use"
+	@echo "  make save-chat       - append latest chat/session log to session notes file"
+	@echo "                         optional: TITLE=\"...\" LATEST_SOURCE=\"...\" TAIL_LINES=200 CHAT_PROJECT=\"...\""
+	@echo "  make save-chat-quick - append NOTE=\"...\" as a chat note"
+	@echo "  make save-chat-debug - run save-chat with verbose trace and log output"
+	@echo "                         optional: DEBUG_LOG=\"/tmp/save-chat-debug.log\""
 
 build:
 	docker compose build apptemplate && docker compose up -d
@@ -157,3 +164,26 @@ health-check:
 	@docker inspect $(APP_CONTAINER) --format '{{range .Mounts}}{{if eq .Destination "$(APP_DIR)"}}{{println .Source}}{{end}}{{end}}' 2>/dev/null || echo "app container not found"
 	@echo "Vite hot URL (public/hot):"
 	@docker exec $(APP_CONTAINER) sh -lc "if [ ! -f $(APP_DIR)/public/hot ]; then echo 'missing'; elif [ ! -s $(APP_DIR)/public/hot ]; then echo 'empty'; else cat $(APP_DIR)/public/hot; echo; fi" 2>/dev/null || echo "app container not running"
+
+save-chat:
+	@bash ./.scripts/save-session-notes.sh --project-name "$(CHAT_PROJECT)" --dir "$(CHAT_NOTES_DIR)" --latest-chat --title "$(if $(TITLE),$(TITLE),Latest Chat Session)" $(if $(LATEST_SOURCE),--latest-source "$(LATEST_SOURCE)",) $(if $(TAIL_LINES),--tail-lines "$(TAIL_LINES)",)
+
+save-chat-quick:
+	@if [ -z "$(NOTE)" ]; then \
+		echo "Usage: make save-chat-quick NOTE=\"your summary here\" [TITLE=\"Section Title\"]"; \
+		exit 1; \
+	fi
+	@bash ./.scripts/save-session-notes.sh --project-name "$(CHAT_PROJECT)" --dir "$(CHAT_NOTES_DIR)" --title "$(if $(TITLE),$(TITLE),Session Update)" --message "$(NOTE)"
+
+save-chat-debug:
+	@LOG_FILE="$(if $(DEBUG_LOG),$(DEBUG_LOG),/tmp/save-chat-debug.log)"; \
+	echo "Running save-chat in debug mode..."; \
+	echo "Debug log: $$LOG_FILE"; \
+	bash -x ./.scripts/save-session-notes.sh --project-name "$(CHAT_PROJECT)" --dir "$(CHAT_NOTES_DIR)" --latest-chat --title "$(if $(TITLE),$(TITLE),Latest Chat Session)" $(if $(LATEST_SOURCE),--latest-source "$(LATEST_SOURCE)",) $(if $(TAIL_LINES),--tail-lines "$(TAIL_LINES)",) >"$$LOG_FILE" 2>&1 || { \
+		echo "save-chat failed. See debug log: $$LOG_FILE"; \
+		tail -n 40 "$$LOG_FILE"; \
+		exit 1; \
+	}; \
+	echo "save-chat succeeded."; \
+	echo "See debug log: $$LOG_FILE"; \
+	tail -n 20 "$$LOG_FILE"

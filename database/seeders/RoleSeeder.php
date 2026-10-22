@@ -13,7 +13,7 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
-        $adminUser = User::where('net_id', 'admin')->first();
+        $adminUser = User::firstWhere('net_id', 'admin');
 
         $roles = [
             [
@@ -64,23 +64,23 @@ class RoleSeeder extends Seeder
 
         // Assign some roles to existing users
         if ($adminUser) {
-            $libraryManagerRole = Role::where('name', 'library_manager')->first();
+            $libraryManagerRole = Role::firstWhere('name', 'library_manager');
             if ($libraryManagerRole) {
                 $adminUser->assignRole($libraryManagerRole);
             }
         }
 
-        $managerUser = User::where('net_id', 'manager01')->first();
+        $managerUser = User::firstWhere('net_id', 'manager01')->first();
         if ($managerUser) {
-            $libraryManagerRole = Role::where('name', 'library_manager')->first();
+            $libraryManagerRole = Role::firstWhere('name', 'library_manager');
             if ($libraryManagerRole) {
                 $managerUser->assignRole($libraryManagerRole);
             }
         }
 
-        $staffUser = User::where('net_id', 'staff01')->first();
+        $staffUser = User::firstWhere('net_id', 'staff01');
         if ($staffUser) {
-            $libraryStaffRole = Role::where('name', 'library_staff')->first();
+            $libraryStaffRole = Role::firstWhere('name', 'library_staff');
             if ($libraryStaffRole) {
                 $staffUser->assignRole($libraryStaffRole);
             }

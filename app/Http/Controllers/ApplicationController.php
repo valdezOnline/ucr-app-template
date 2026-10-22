@@ -106,7 +106,21 @@ class ApplicationController extends Controller
             'generate_credentials' => ['boolean'],
             'api_key_expires_at' => ['nullable', 'date', 'after:today'],
             'allowed_domains' => ['nullable', 'string'],
+            'external_auth_enabled' => ['boolean'],
+            'external_auth_callback_url' => ['nullable', 'url', 'max:2048'],
         ]);
+
+        if (($validated['external_auth_enabled'] ?? false) && empty($validated['external_auth_callback_url'])) {
+            return back()->withErrors([
+                'external_auth_callback_url' => 'Callback URL is required when external authentication is enabled.'
+            ])->withInput();
+        }
+
+        if (($validated['external_auth_enabled'] ?? false) && !($validated['supports_api_auth'] ?? false)) {
+            return back()->withErrors([
+                'supports_api_auth' => 'API Authentication must be enabled to use external authentication broker.'
+            ])->withInput();
+        }
 
         // Additional validation based on URL type
         if ($validated['url_type'] === 'external') {
@@ -149,6 +163,8 @@ class ApplicationController extends Controller
             'supports_api_auth' => $validated['supports_api_auth'] ?? false,
             'allowed_domains' => $allowedDomains,
             'api_key_expires_at' => $validated['api_key_expires_at'] ?? null,
+            'external_auth_enabled' => $validated['external_auth_enabled'] ?? false,
+            'external_auth_callback_url' => $validated['external_auth_callback_url'] ?? null,
         ]);
 
         // Generate API credentials if requested
@@ -250,7 +266,21 @@ class ApplicationController extends Controller
             'api_key_expires_at' => ['nullable', 'date', 'after:today'],
             'allowed_domains' => ['nullable', 'string'],
             'api_active' => ['boolean'],
+            'external_auth_enabled' => ['boolean'],
+            'external_auth_callback_url' => ['nullable', 'url', 'max:2048'],
         ]);
+
+        if (($validated['external_auth_enabled'] ?? false) && empty($validated['external_auth_callback_url'])) {
+            return back()->withErrors([
+                'external_auth_callback_url' => 'Callback URL is required when external authentication is enabled.'
+            ])->withInput();
+        }
+
+        if (($validated['external_auth_enabled'] ?? false) && !($validated['supports_api_auth'] ?? false)) {
+            return back()->withErrors([
+                'supports_api_auth' => 'API Authentication must be enabled to use external authentication broker.'
+            ])->withInput();
+        }
 
         // Additional validation based on URL type
         if ($validated['url_type'] === 'external') {
@@ -289,6 +319,8 @@ class ApplicationController extends Controller
         if ($validated['supports_api_auth'] ?? false) {
             $apiUpdates['supports_api_auth'] = true;
             $apiUpdates['allowed_domains'] = $allowedDomains;
+            $apiUpdates['external_auth_enabled'] = $validated['external_auth_enabled'] ?? false;
+            $apiUpdates['external_auth_callback_url'] = $validated['external_auth_callback_url'] ?? null;
 
             // Generate new credentials if requested and no existing credentials
             if (($validated['generate_credentials'] ?? false) && !$application->api_key) {
@@ -301,6 +333,8 @@ class ApplicationController extends Controller
             // Disable API auth but don't remove credentials
             $apiUpdates['supports_api_auth'] = false;
             $apiUpdates['api_active'] = false;
+            $apiUpdates['external_auth_enabled'] = false;
+            $apiUpdates['external_auth_callback_url'] = null;
         }
 
         $application->update([

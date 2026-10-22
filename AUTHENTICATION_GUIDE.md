@@ -1,6 +1,6 @@
 # Authentication Configuration Guide
 
-This application supports two authentication methods that can be toggled via configuration:
+This application supports two primary web authentication methods and an external broker flow:
 
 ## Authentication Types
 
@@ -15,6 +15,12 @@ This application supports two authentication methods that can be toggled via con
 - Single Sign-On capability
 - No local password management
 - User registration disabled (managed centrally)
+
+### 3. External Broker Authentication (CAS + API)
+- External application initiates auth through this app
+- CAS login is handled by this app
+- Access is validated using application API credentials and user role mapping
+- External app receives authorization code, then exchanges for Sanctum token
 
 ## Configuration
 
@@ -163,7 +169,38 @@ CAS_MASQUERADE=your-test-username
 ```
 
 This bypasses actual CAS authentication and uses the specified username.
-Make sure the masquerade `net_id` exists in your local `users` table and is active. If it does not exist, the app now falls back to normal CAS authentication for that request.
+Make sure the masquerade `net_id` exists in your local `users` table and is active.
+
+## External Broker Configuration
+
+The external broker flow is controlled independently of `AUTH_TYPE` so existing web login behavior remains unchanged.
+
+### Environment Options
+
+```env
+EXTERNAL_AUTH_BROKER_ENABLED=true
+EXTERNAL_AUTH_BROKER_AUTH_TTL=10
+EXTERNAL_AUTH_BROKER_CODE_TTL=5
+EXTERNAL_AUTH_BROKER_REQUIRE_HTTPS=true
+```
+
+### Per-Application Requirements
+
+To allow an external app client:
+
+1. Enable API authentication for the application.
+2. Ensure API credentials (`api_key` and `api_secret`) are generated and active.
+3. Enable external broker mode for the application.
+4. Set the exact callback URL used by the external app.
+5. Assign at least one role to the application that eligible users have.
+
+### External Broker Endpoints
+
+1. `GET /api/auth/authorize`
+2. `GET /api/auth/callback`
+3. `POST /api/auth/token`
+
+See API_AUTHENTICATION_GUIDE.md for the request and response contracts.
 
 ## Troubleshooting
 

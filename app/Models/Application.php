@@ -28,12 +28,15 @@ class Application extends Model
         'allowed_domains',
         'api_key_expires_at',
         'api_active',
+        'external_auth_enabled',
+        'external_auth_callback_url',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'supports_api_auth' => 'boolean',
         'api_active' => 'boolean',
+        'external_auth_enabled' => 'boolean',
         'allowed_domains' => 'array',
         'api_key_expires_at' => 'datetime',
         'created_at' => 'datetime',
@@ -287,5 +290,29 @@ class Application extends Model
     public function isApiExpired(): bool
     {
         return $this->api_key_expires_at && $this->api_key_expires_at->isPast();
+    }
+
+    /**
+     * Check whether this application can use external broker authentication.
+     */
+    public function canUseExternalAuthBroker(): bool
+    {
+        return $this->is_active
+            && $this->supports_api_auth
+            && $this->api_active
+            && $this->external_auth_enabled
+            && !empty($this->external_auth_callback_url);
+    }
+
+    /**
+     * Validate a provided redirect URI against the registered callback.
+     */
+    public function isValidExternalCallback(string $redirectUri): bool
+    {
+        if (empty($this->external_auth_callback_url)) {
+            return false;
+        }
+
+        return rtrim($redirectUri, '/') === rtrim($this->external_auth_callback_url, '/');
     }
 }

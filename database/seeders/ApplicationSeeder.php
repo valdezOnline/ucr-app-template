@@ -14,23 +14,23 @@ class ApplicationSeeder extends Seeder
      */
     public function run(): void
     {
-        $adminUser = User::where('net_id', 'admin')->first();
+        $adminUser = User::firstWhere('net_id', 'admin');
 
         $applications = [
             [
-                'name' => 'Library Catalog System',
-                'description' => 'Integrated library catalog and inventory management system',
-                'url' => 'https://catalog.library.ucr.edu',
-                'icon' => 'fas fa-book',
+                'name' => 'Billing Appeals',
+                'description' => 'System for managing billing appeals',
+                'url' => 'https://billingappeals.libportaltest.ucr.edu',
+                'icon' => 'fas fa-file-invoice',
                 'is_active' => true,
                 'created_by' => $adminUser?->id,
                 'roles' => ['library_staff', 'library_manager'],
             ],
             [
-                'name' => 'Research Portal',
-                'description' => 'Academic research tools and database access portal',
-                'url' => 'https://research.library.ucr.edu',
-                'icon' => 'fas fa-microscope',
+                'name' => 'Professional Development Requests',
+                'description' => 'System for managing professional development requests',
+                'url' => 'https://library-apps-test.ucr.edu/professional-development-requests',
+                'icon' => 'fas fa-chalkboard-teacher',
                 'is_active' => true,
                 'created_by' => $adminUser?->id,
                 'roles' => ['library_staff', 'library_manager', 'department_liaison'],
@@ -56,7 +56,7 @@ class ApplicationSeeder extends Seeder
             [
                 'name' => 'Student TimeTracker',
                 'description' => 'Time tracking system for student workers',
-                'url' => 'https://timetrack.library.ucr.edu',
+                'url' => 'https://timetracker.libportaltest.ucr.edu',
                 'icon' => 'fas fa-clock',
                 'is_active' => true,
                 'created_by' => $adminUser?->id,
@@ -81,7 +81,7 @@ class ApplicationSeeder extends Seeder
 
             // Assign roles to application
             foreach ($roleNames as $roleName) {
-                $role = Role::where('name', $roleName)->first();
+                $role = Role::firstWhere('name', $roleName);
                 if ($role) {
                     $application->roles()->attach($role->id, ['assigned_by' => $adminUser?->id]);
                 }

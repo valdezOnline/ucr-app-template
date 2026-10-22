@@ -96,6 +96,106 @@ Your external application must:
 
 Base URL: `https://your-domain.com/api`
 
+## External CAS Broker Flow (Authorization Code)
+
+Use this flow when an external application wants browser-based CAS login through this app without handling user passwords directly.
+
+### Flow Summary
+
+1. External app redirects user to `GET /api/auth/authorize` with `api_key`, `redirect_uri`, and `state`.
+2. This app validates client/callback configuration and completes CAS authentication.
+3. On success, this app redirects user back to external `redirect_uri` with `code` and `state`.
+4. External backend exchanges the code at `POST /api/auth/token` with `api_key` and `api_secret`.
+5. This app returns a Sanctum bearer token plus user/application details.
+
+### Requirements
+
+1. Application must have API auth enabled (`supports_api_auth=true`, `api_active=true`).
+2. External broker mode must be enabled on the application (`external_auth_enabled=true`).
+3. Application must have a registered callback URL (`external_auth_callback_url`).
+4. Redirect URI must exactly match the registered callback URL.
+
+### Authorize Endpoint
+
+**GET** `/api/auth/authorize`
+
+**Query Parameters:**
+
+- `api_key` (required)
+- `redirect_uri` (required)
+- `state` (required)
+
+**Success Behavior:**
+
+Browser is redirected to:
+
+```text
+{redirect_uri}?code={authorization_code}&state={state}
+```
+
+**Error Behavior:**
+
+Browser is redirected to:
+
+```text
+{redirect_uri}?error={error}&error_description={message}&state={state}
+```
+
+### Token Exchange Endpoint
+
+**POST** `/api/auth/token`
+
+**Request:**
+
+```json
+{
+    "grant_type": "authorization_code",
+    "code": "one_time_authorization_code",
+    "api_key": "app_your_api_key_here",
+    "api_secret": "your_api_secret_here",
+    "redirect_uri": "https://external.app-template.com/callback"
+}
+```
+
+**Response (Success):**
+
+```json
+{
+    "success": true,
+    "token_type": "Bearer",
+    "access_token": "sanctum_token_here",
+    "expires_at": null,
+    "user": {
+        "id": 1,
+        "net_id": "jdoe",
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "roles": ["user", "editor"]
+    },
+    "application": {
+        "id": 1,
+        "name": "My External App"
+    }
+}
+```
+
+**Response (Failed):**
+
+```json
+{
+    "success": false,
+    "error": "invalid_grant",
+    "message": "Authorization code is invalid, consumed, or expired"
+}
+```
+
+### Security Notes
+
+1. Access tokens are never sent in front-channel redirects.
+2. Authorization codes are one-time use and expire quickly.
+3. Redirect URI is bound to application registration and to the issued code.
+4. Failed code replay returns `invalid_grant`.
+
 ### Authentication Endpoints
 
 #### 1. Authenticate User
@@ -502,15 +602,15 @@ Postman is an excellent tool for testing and documenting API endpoints. Here's h
 
 Create a new environment with these variables:
 
-| Variable | Type | Initial Value | Current Value |
-| ---------- | ------ | --------------- | --------------- |
-| `base_url` | default | `http://localhost:8000` | `http://localhost:8000` |
-| `api_key` | secret | `app_your_api_key_here` | `app_your_api_key_here` |
-| `api_secret` | secret | `your_api_secret_here` | `your_api_secret_here` |
-| `auth_token` | secret | | (will be set automatically) |
-| `user_id` | default | `1` | `1` |
-| `test_username` | default | `admin@ucr.edu` | `admin@ucr.edu` |
-| `test_password` | secret | `password` | `password` |
+| Variable        | Type    | Initial Value           | Current Value               |
+| --------------- | ------- | ----------------------- | --------------------------- |
+| `base_url`      | default | `http://localhost:8000` | `http://localhost:8000`     |
+| `api_key`       | secret  | `app_your_api_key_here` | `app_your_api_key_here`     |
+| `api_secret`    | secret  | `your_api_secret_here`  | `your_api_secret_here`      |
+| `auth_token`    | secret  |                         | (will be set automatically) |
+| `user_id`       | default | `1`                     | `1`                         |
+| `test_username` | default | `admin@ucr.edu`         | `admin@ucr.edu`             |
+| `test_password` | secret  | `password`              | `password`                  |
 
 ### API Endpoint Tests
 

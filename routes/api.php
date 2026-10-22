@@ -18,6 +18,21 @@ use App\Http\Controllers\Api\UserController;
 
 // Public authentication routes for external applications
 Route::prefix('auth')->group(function () {
+    // Start browser-based CAS broker flow for external applications
+    Route::get('/authorize', [AuthController::class, 'authorizeExternal'])
+        ->middleware('throttle:30,1')
+        ->name('api.auth.authorize');
+
+    // CAS return callback that issues an authorization code and redirects back
+    Route::get('/callback', [AuthController::class, 'callbackExternal'])
+        ->middleware('throttle:30,1')
+        ->name('api.auth.external.callback');
+
+    // Exchange authorization code for Sanctum token
+    Route::post('/token', [AuthController::class, 'exchangeExternalToken'])
+        ->middleware('throttle:60,1')
+        ->name('api.auth.token');
+
     // Authenticate a user with credentials
     Route::post('/authenticate', [AuthController::class, 'authenticate'])->name('api.auth.authenticate');
 

@@ -68,25 +68,32 @@ class AuthenticationTypeMiddleware
                 }
             }
 
-            // Check if already authenticated via CAS (non-masquerade)
-            if (function_exists('cas') && cas()->isAuthenticatedFromSession()) {
-                $netId = cas()->user();
+            // Resolve CAS user from local phpCAS session, or from a returned ticket if present.
+            if (function_exists('cas')) {
+                $netId = \App\Services\CasService::authenticatedUser($request->has('ticket'));
 
-                if ($netId && !Auth::check()) {
-                    // Find user based on CAS authentication
-                    $user = User::where('net_id', $netId)->first();
+                if ($netId !== null) {
+                    session(['cas_user' => $netId]);
 
-                    if ($user && $user->is_active) {
-                        Auth::login($user);
-                        Log::info("CAS user authenticated via middleware", ['net_id' => $netId]);
-                    } else {
-                        Log::warning("CAS user not found or inactive", ['net_id' => $netId]);
+                    if (!Auth::check()) {
+                        // Find user based on CAS authentication
+                        $user = User::where('net_id', $netId)->first();
 
-                        if (AuthenticationService::isCasAuth()) {
-                            return redirect()->route(AuthenticationService::getLoginRouteName())->with('error', 'User account not found or inactive.');
+                        if ($user && $user->is_active) {
+                            Auth::login($user);
+                            Log::info("CAS user authenticated via middleware", [
+                                'net_id' => $netId,
+                                'has_ticket' => $request->has('ticket'),
+                            ]);
+                        } else {
+                            Log::warning("CAS user authenticated but not authorized locally", ['net_id' => $netId]);
+
+                            if (AuthenticationService::isCasAuth()) {
+                                return redirect()->route(AuthenticationService::getLoginRouteName())->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
+                            }
+
+                            return redirect()->route('login')->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
                         }
-
-                        return redirect()->route('login')->with('error', 'User account not found or inactive.');
                     }
                 }
             }
@@ -108,7 +115,7 @@ class AuthenticationTypeMiddleware
             // For protected routes, redirect to appropriate login
             return redirect()->route(AuthenticationService::getLoginRouteName());
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('CAS authentication middleware error: ' . $e->getMessage());
             return $next($request);
         }

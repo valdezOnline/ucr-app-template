@@ -9,6 +9,7 @@
 /.idea
 /.nova
 /.phpunit.cache
+/.scripts
 /.vscode
 /.zed
 /auth.json
@@ -19,9 +20,11 @@
 /storage/*.key
 /storage/pail
 /vendor
+/.scripts
 Homestead.json
 Homestead.yaml
 Thumbs.db
 docker-compose.override.yml
 docker-compose.yml
 php.Dockerfile
+_ide_*.php

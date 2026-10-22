@@ -189,6 +189,26 @@
                                             <span
                                                 class="ms-2">{{ $application->created_at->format('M j, Y \\a\\t g:i A') }}</span>
                                         </div>
+
+                                        <hr>
+
+                                        <div class="mb-2">
+                                            <strong>External CAS Broker:</strong>
+                                            @if ($application->external_auth_enabled)
+                                                <span class="badge bg-success ms-2">Enabled</span>
+                                            @else
+                                                <span class="badge bg-secondary ms-2">Disabled</span>
+                                            @endif
+                                        </div>
+
+                                        @if ($application->external_auth_enabled)
+                                            <div class="mb-0">
+                                                <strong>Broker Callback URL:</strong>
+                                                <div class="small text-muted mt-1">
+                                                    {{ $application->external_auth_callback_url ?: 'Not configured' }}
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
