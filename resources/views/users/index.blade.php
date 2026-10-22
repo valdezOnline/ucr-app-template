@@ -152,6 +152,24 @@
                                                                 class="fas fa-{{ $user->is_active ? 'user-slash' : 'user-check' }}"></i>
                                                         </button>
                                                     </form>
+                                                    @if (
+                                                        $user->id !== auth()->id() &&
+                                                            auth()->user()->hasRole('admin') &&
+                                                            !$user->hasRole('admin') &&
+                                                            !$user->is_admin &&
+                                                            $user->is_active &&
+                                                            !session('impersonation.active'))
+                                                        <form method="POST"
+                                                            action="{{ route('admin.impersonation.start', $user) }}"
+                                                            class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                                                title="Login as this user"
+                                                                onclick="return confirm('Start impersonating {{ $user->full_name }}?')">
+                                                                <i class="fas fa-user-secret"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
                                                     @if ($user->id !== auth()->id() && auth()->user()->hasRole('admin'))
                                                         <form method="POST" action="{{ route('users.destroy', $user) }}"
                                                             class="d-inline">

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\AuthenticationService;
+use App\Services\ImpersonationService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -48,6 +49,10 @@ class AuthenticationTypeMiddleware
     protected function handleCasAuthentication(Request $request, Closure $next)
     {
         try {
+            if (ImpersonationService::isImpersonating() && Auth::check()) {
+                return $next($request);
+            }
+
             // Handle masquerade mode first
             if (config('cas.cas_masquerade')) {
                 $masqueradeUser = config('cas.cas_masquerade');

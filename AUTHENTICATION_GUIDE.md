@@ -144,6 +144,16 @@ $canRegister = AuthenticationService::registrationEnabled();
 $canResetPassword = AuthenticationService::passwordResetEnabled();
 ```
 
+## Admin Impersonation
+
+Admin impersonation is supported for both Laravel and CAS authentication modes.
+
+- Admins can impersonate active, non-admin users from user management pages.
+- Admins cannot impersonate other admin users.
+- While impersonating, a warning banner is displayed with the impersonated user's name.
+- Logging out during impersonation stops impersonation and restores the original admin session (instead of fully logging out).
+- Each impersonation start/stop event is persisted in `impersonation_audits` for audit history.
+
 ## Development
 
 ### Testing with Different Authentication Types
