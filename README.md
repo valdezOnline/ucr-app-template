@@ -42,6 +42,16 @@ Authenticated users can personalize their dashboard:
 - **My Shortcuts** allows users to add and remove internal or external links.
 - Shortcuts can optionally be assigned a custom category (for example, "Daily" or "Reports").
 
+## Admin User Impersonation
+
+Administrators can temporarily log in as a non-admin user from user management screens.
+
+- Works with both `AUTH_TYPE=laravel` and `AUTH_TYPE=cas`.
+- Admins cannot impersonate other admin users.
+- While impersonating, a visible warning banner indicates which user is being impersonated.
+- Selecting logout during impersonation stops impersonation and returns the admin to their own account.
+- All impersonation sessions are written to the `impersonation_audits` database table.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

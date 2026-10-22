@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\AuthenticationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
@@ -14,6 +15,13 @@ use Tests\TestCase;
 class AuthenticationConfigTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
 
     public function test_default_authentication_type_is_laravel()
     {
@@ -136,10 +144,12 @@ class AuthenticationConfigTest extends TestCase
     {
         Config::set('auth.type', 'cas');
 
-        $response = $this->post('/login', [
-            'email' => 'admin@example.com',
-            'password' => 'invalid-password',
-        ]);
+        $response = $this->withSession(['_token' => 'test-token'])
+            ->post('/login', [
+                '_token' => 'test-token',
+                'email' => 'admin@example.com',
+                'password' => 'invalid-password',
+            ]);
 
         $response->assertRedirect(route('login'));
         $response->assertSessionHas('info');
@@ -173,10 +183,17 @@ class AuthenticationConfigTest extends TestCase
             ->once()
             ->with('config:clear')
             ->andReturn(0);
+        Artisan::shouldReceive('call')
+            ->with('route:clear')
+            ->zeroOrMoreTimes()
+            ->andReturn(0);
 
-        $response = $this->actingAs($admin)->put(route('auth-config.update'), [
-            'auth_type' => 'cas',
-        ]);
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->put(route('auth-config.update'), [
+                '_token' => 'test-token',
+                'auth_type' => 'cas',
+            ]);
 
         $response->assertRedirect(route('login'));
         $response->assertSessionHas('success');
@@ -211,10 +228,17 @@ class AuthenticationConfigTest extends TestCase
             ->once()
             ->with('config:clear')
             ->andReturn(0);
+        Artisan::shouldReceive('call')
+            ->with('route:clear')
+            ->zeroOrMoreTimes()
+            ->andReturn(0);
 
-        $response = $this->actingAs($admin)->put(route('auth-config.update'), [
-            'auth_type' => 'laravel',
-        ]);
+        $response = $this->actingAs($admin)
+            ->withSession(['_token' => 'test-token'])
+            ->put(route('auth-config.update'), [
+                '_token' => 'test-token',
+                'auth_type' => 'laravel',
+            ]);
 
         $response->assertRedirect(route('auth-config.index'));
         $response->assertSessionHas('success');

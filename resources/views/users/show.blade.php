@@ -166,6 +166,21 @@
                                     {{ $user->is_active ? 'Deactivate User' : 'Activate User' }}
                                 </button>
                             </form>
+                            @if (
+                                $user->id !== auth()->id() &&
+                                    auth()->user()->hasRole('admin') &&
+                                    !$user->hasRole('admin') &&
+                                    !$user->is_admin &&
+                                    $user->is_active &&
+                                    !session('impersonation.active'))
+                                <form method="POST" action="{{ route('admin.impersonation.start', $user) }}" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-secondary me-2"
+                                        onclick="return confirm('Start impersonating {{ $user->full_name }}?')">
+                                        <i class="fas fa-user-secret me-1"></i>Login as This User
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                         <div class="col-md-6 text-end">
                             @if ($user->id !== auth()->id() && auth()->user()->hasRole('admin'))

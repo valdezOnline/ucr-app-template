@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\AdminImpersonationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -77,6 +78,10 @@ Route::middleware(['auth', 'auth.type'])->group(function () {
     // Authentication Configuration Routes (Admin only)
     Route::get('admin/auth-config', [App\Http\Controllers\AuthConfigController::class, 'index'])->name('auth-config.index');
     Route::put('admin/auth-config', [App\Http\Controllers\AuthConfigController::class, 'update'])->name('auth-config.update');
+
+    // Admin impersonation routes
+    Route::post('admin/impersonation/stop', [AdminImpersonationController::class, 'stop'])->name('admin.impersonation.stop');
+    Route::post('admin/impersonation/{user}', [AdminImpersonationController::class, 'start'])->name('admin.impersonation.start');
 });
 
 // Debug route to test CAS authentication flow
@@ -253,6 +258,24 @@ Route::get('/cas/login', function () {
 })->name('cas.login');
 
 Route::get('/cas/logout', function () {
+    if (\App\Services\ImpersonationService::isImpersonating()) {
+        try {
+            \App\Services\ImpersonationService::stop(request(), 'logout');
+
+            return redirect()->route('home')->with(
+                'success',
+                'Impersonation stopped. You are now back in your admin account.'
+            );
+        } catch (\Throwable $e) {
+            Log::error('CAS logout: failed to stop impersonation', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return redirect()->route('login')->with('error', 'Unable to stop impersonation. Please sign in again.');
+        }
+    }
+
     // If CAS authentication is not enabled, use regular logout
     if (!\App\Services\AuthenticationService::isCasAuth()) {
         Auth::logout();

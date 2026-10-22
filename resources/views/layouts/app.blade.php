@@ -28,6 +28,23 @@
 
     <main class="py-4">
         <div class="container">
+            @if (session('impersonation.active') && auth()->check())
+                <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center"
+                    role="alert">
+                    <div>
+                        <i class="fas fa-user-secret me-2"></i>
+                        <strong>Admin Impersonation Active:</strong>
+                        You are impersonating <strong>{{ auth()->user()->full_name }}</strong>.
+                    </div>
+                    <form method="POST" action="{{ route('admin.impersonation.stop') }}" class="mt-3 mt-md-0">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-outline-dark">
+                            <i class="fas fa-user-check me-1"></i>Stop Impersonation
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
                     <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
