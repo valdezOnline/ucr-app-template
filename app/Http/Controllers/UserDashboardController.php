@@ -45,19 +45,42 @@ class UserDashboardController extends Controller
         $shortcuts = collect($user->dashboard_shortcuts ?? [])
             ->filter(fn(array $shortcut) => isset($shortcut['id'], $shortcut['name'], $shortcut['url'], $shortcut['type']))
             ->map(function (array $shortcut) {
-                $shortcut['category'] = $shortcut['category'] ?? null;
+                $category = $shortcut['category'] ?? null;
+                $shortcut['category'] = $this->normalizeCategory($category);
+                $shortcut['category_key'] = filled($shortcut['category']) ? mb_strtolower($shortcut['category']) : null;
+
                 return $shortcut;
             })
             ->values();
 
+        $shortcutCategories = $shortcuts
+            ->pluck('category')
+            ->filter(fn($category) => filled($category))
+            ->map(fn($category) => trim((string) $category))
+            ->unique(fn($category) => mb_strtolower($category))
+            ->sort(fn($left, $right) => mb_strtolower($left) <=> mb_strtolower($right))
+            ->values();
+
         $shortcutsByCategory = $shortcuts
             ->sortBy([
-                fn(array $shortcut) => empty($shortcut['category']) ? 'zzzzzzzz' : mb_strtolower($shortcut['category']),
+                fn(array $shortcut) => empty($shortcut['category_key']) ? 'zzzzzzzz' : $shortcut['category_key'],
                 fn(array $shortcut) => mb_strtolower($shortcut['name']),
             ])
-            ->groupBy(fn(array $shortcut) => empty($shortcut['category']) ? 'Uncategorized' : $shortcut['category']);
+            ->groupBy(function (array $shortcut) {
+                return $shortcut['category_key'] ?? 'uncategorized';
+            })
+            ->mapWithKeys(function ($items, $key) {
+                if ($key === 'uncategorized') {
+                    return ['Uncategorized' => $items];
+                }
 
-        return view('user-dashboard', compact('userApplications', 'shortcutsByCategory'));
+                $firstCategory = trim((string) ($items->first()['category'] ?? ''));
+                $displayCategory = $firstCategory !== '' ? $firstCategory : 'Uncategorized';
+
+                return [$displayCategory => $items];
+            });
+
+        return view('user-dashboard', compact('userApplications', 'shortcutsByCategory', 'shortcutCategories'));
     }
 
     /**
@@ -121,41 +144,56 @@ class UserDashboardController extends Controller
             'category' => ['nullable', 'string', 'max:80'],
         ]);
 
-        $normalizedUrl = trim($validated['url']);
-        $shortcutType = $validated['type'];
-
-        if ($shortcutType === 'internal') {
-            if (!Str::startsWith($normalizedUrl, '/')) {
-                $normalizedUrl = '/' . ltrim($normalizedUrl, '/');
-            }
-
-            if (filter_var($normalizedUrl, FILTER_VALIDATE_URL)) {
-                return back()->withInput()->withErrors([
-                    'url' => 'Internal shortcuts must use a path such as /dashboard or /profile.',
-                ]);
-            }
-        }
-
-        if ($shortcutType === 'external' && !filter_var($normalizedUrl, FILTER_VALIDATE_URL)) {
-            return back()->withInput()->withErrors([
-                'url' => 'External shortcuts must be valid URLs including http:// or https://.',
-            ]);
-        }
-
+        $normalizedShortcut = $this->normalizeShortcutPayload($validated);
         $user = $request->user();
         $shortcuts = collect($user->dashboard_shortcuts ?? []);
         $shortcuts->push([
             'id' => (string) Str::uuid(),
-            'name' => trim($validated['name']),
-            'type' => $shortcutType,
-            'url' => $normalizedUrl,
-            'category' => filled($validated['category'] ?? null) ? trim($validated['category']) : null,
+            'name' => $normalizedShortcut['name'],
+            'type' => $normalizedShortcut['type'],
+            'url' => $normalizedShortcut['url'],
+            'category' => $normalizedShortcut['category'],
         ]);
 
         $user->dashboard_shortcuts = $shortcuts->values()->all();
         $user->save();
 
         return back()->with('success', 'Shortcut added to My Shortcuts.');
+    }
+
+    /**
+     * Update a dashboard shortcut for the authenticated user.
+     */
+    public function updateShortcut(Request $request, string $shortcutId): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'type' => ['required', Rule::in(['internal', 'external'])],
+            'url' => ['required', 'string', 'max:2048'],
+            'category' => ['nullable', 'string', 'max:80'],
+        ]);
+
+        $normalizedShortcut = $this->normalizeShortcutPayload($validated);
+        $user = $request->user();
+        $shortcuts = collect($user->dashboard_shortcuts ?? []);
+
+        $shortcuts = $shortcuts->map(function (array $shortcut) use ($shortcutId, $normalizedShortcut) {
+            if (($shortcut['id'] ?? null) !== $shortcutId) {
+                return $shortcut;
+            }
+
+            $shortcut['name'] = $normalizedShortcut['name'];
+            $shortcut['type'] = $normalizedShortcut['type'];
+            $shortcut['url'] = $normalizedShortcut['url'];
+            $shortcut['category'] = $normalizedShortcut['category'];
+
+            return $shortcut;
+        });
+
+        $user->dashboard_shortcuts = $shortcuts->values()->all();
+        $user->save();
+
+        return back()->with('success', 'Shortcut updated.');
     }
 
     /**
@@ -183,6 +221,53 @@ class UserDashboardController extends Controller
         $user->save();
 
         return back()->with('success', 'Shortcut removed from My Shortcuts.');
+    }
+
+    /**
+     * Normalize and validate shortcut payload before saving.
+     *
+     * @param  array{name: string, type: string, url: string, category?: string|null}  $payload
+     * @return array{name: string, type: string, url: string, category: string|null}
+     */
+    private function normalizeShortcutPayload(array $payload): array
+    {
+        $normalizedUrl = trim((string) $payload['url']);
+        $shortcutType = $payload['type'];
+
+        if ($shortcutType === 'internal') {
+            if (!Str::startsWith($normalizedUrl, '/')) {
+                $normalizedUrl = '/' . ltrim($normalizedUrl, '/');
+            }
+
+            if (filter_var($normalizedUrl, FILTER_VALIDATE_URL)) {
+                throw new \InvalidArgumentException('Internal shortcuts must use a path such as /dashboard or /profile.');
+            }
+        }
+
+        if ($shortcutType === 'external' && !filter_var($normalizedUrl, FILTER_VALIDATE_URL)) {
+            throw new \InvalidArgumentException('External shortcuts must be valid URLs including http:// or https://.');
+        }
+
+        return [
+            'name' => trim((string) $payload['name']),
+            'type' => $shortcutType,
+            'url' => $normalizedUrl,
+            'category' => $this->normalizeCategory($payload['category'] ?? null),
+        ];
+    }
+
+    /**
+     * Normalize category labels for consistent display and grouping.
+     */
+    private function normalizeCategory(?string $category): ?string
+    {
+        $trimmedCategory = trim((string) ($category ?? ''));
+
+        if ($trimmedCategory === '') {
+            return null;
+        }
+
+        return ucwords(strtolower($trimmedCategory));
     }
 
     /**
