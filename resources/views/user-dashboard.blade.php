@@ -122,16 +122,30 @@
                                                                     class="fas fa-external-link-alt ms-1 small text-muted"></i>
                                                             @endif
                                                         </a>
-                                                        <form method="POST"
-                                                            action="{{ route('dashboard.shortcuts.destroy', $shortcut['id']) }}">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit"
-                                                                class="btn btn-link btn-sm text-danger p-0 ms-2"
-                                                                aria-label="Remove shortcut {{ $shortcut['name'] }}">
-                                                                <i class="fas fa-trash-alt"></i>
+                                                        <div class="shortcut-actions d-flex align-items-center">
+                                                            <button type="button"
+                                                                class="btn btn-link btn-sm text-primary p-0 me-2 edit-shortcut-btn"
+                                                                data-shortcut-id="{{ $shortcut['id'] }}"
+                                                                data-shortcut-name="{{ $shortcut['name'] }}"
+                                                                data-shortcut-type="{{ $shortcut['type'] }}"
+                                                                data-shortcut-url="{{ $shortcut['url'] }}"
+                                                                data-shortcut-category="{{ $shortcut['category'] ?? '' }}"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#shortcutModal"
+                                                                aria-label="Edit shortcut {{ $shortcut['name'] }}">
+                                                                <i class="fas fa-edit"></i>
                                                             </button>
-                                                        </form>
+                                                            <form method="POST"
+                                                                action="{{ route('dashboard.shortcuts.destroy', $shortcut['id']) }}">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit"
+                                                                    class="btn btn-link btn-sm text-danger p-0"
+                                                                    aria-label="Remove shortcut {{ $shortcut['name'] }}">
+                                                                    <i class="fas fa-trash-alt"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
                                                     </li>
                                                 @endforeach
                                             </ul>
@@ -148,12 +162,14 @@
     <div class="modal fade" id="shortcutModal" tabindex="-1" aria-labelledby="shortcutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form method="POST" action="{{ route('dashboard.shortcuts.store') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="shortcutModalLabel">Create Shortcut</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form id="shortcutForm" method="POST" action="{{ route('dashboard.shortcuts.store') }}">
                     @csrf
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="shortcutModalLabel">Create Shortcut</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+                    <input type="hidden" name="_method" id="shortcutMethod" value="POST">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label for="shortcut-name" class="form-label">Shortcut Name</label>
@@ -190,21 +206,38 @@
 
                         <div class="mb-3">
                             <label for="shortcut-category" class="form-label">Category (Optional)</label>
-                            <input id="shortcut-category" type="text" name="category"
+                            <input id="shortcut-category" list="shortcut-category-options" type="text" name="category"
                                 class="form-control @error('category') is-invalid @enderror"
                                 value="{{ old('category') }}" maxlength="80"
                                 placeholder="Examples: Daily, HR, Reports">
+                            <datalist id="shortcut-category-options">
+                                @foreach ($shortcutCategories as $category)
+                                    <option value="{{ $category }}"></option>
+                                @endforeach
+                            </datalist>
                             @error('category')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-plus me-1"></i>Create Shortcut
+                    <div class="modal-footer d-flex justify-content-between align-items-center">
+                        <button type="submit" class="btn btn-outline-danger d-none" id="shortcutDeleteButton"
+                            form="shortcutDeleteForm">
+                            <i class="fas fa-trash-alt me-1"></i>Delete Shortcut
                         </button>
+
+                        <div class="d-flex gap-2 ms-auto">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id="shortcutSubmitButton">
+                                <i class="fas fa-plus me-1"></i>Create Shortcut
+                            </button>
+                        </div>
                     </div>
+                </form>
+
+                <form id="shortcutDeleteForm" method="POST" action="">
+                    @csrf
+                    <input type="hidden" name="_method" value="DELETE">
                 </form>
             </div>
         </div>
@@ -256,6 +289,10 @@
             border-bottom: 0;
         }
 
+        .shortcut-actions {
+            gap: 0.35rem;
+        }
+
         .shortcut-category-title {
             font-size: 0.9rem;
             text-transform: uppercase;
@@ -284,6 +321,77 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const shortcutForm = document.getElementById('shortcutForm');
+            const shortcutMethodInput = document.getElementById('shortcutMethod');
+            const shortcutModalLabel = document.getElementById('shortcutModalLabel');
+            const shortcutSubmitButton = document.getElementById('shortcutSubmitButton');
+            const shortcutDeleteForm = document.getElementById('shortcutDeleteForm');
+            const shortcutDeleteButton = document.getElementById('shortcutDeleteButton');
+            const shortcutNameInput = document.getElementById('shortcut-name');
+            const shortcutTypeInput = document.getElementById('shortcut-type');
+            const shortcutUrlInput = document.getElementById('shortcut-url');
+            const shortcutCategoryInput = document.getElementById('shortcut-category');
+            const createShortcutButton = document.querySelector('[data-bs-target="#shortcutModal"]');
+
+            const setCreateMode = () => {
+                if (!shortcutForm || !shortcutMethodInput) {
+                    return;
+                }
+
+                shortcutForm.action = '{{ route('dashboard.shortcuts.store') }}';
+                shortcutMethodInput.value = 'POST';
+                shortcutModalLabel.textContent = 'Create Shortcut';
+                shortcutSubmitButton.innerHTML = '<i class="fas fa-plus me-1"></i>Create Shortcut';
+                shortcutNameInput.value = '';
+                shortcutTypeInput.value = 'internal';
+                shortcutUrlInput.value = '';
+                shortcutCategoryInput.value = '';
+                if (shortcutDeleteForm && shortcutDeleteButton) {
+                    shortcutDeleteForm.action = '';
+                    shortcutDeleteButton.classList.add('d-none');
+                }
+            };
+
+            if (shortcutDeleteButton) {
+                shortcutDeleteButton.addEventListener('click', (event) => {
+                    if (!shortcutDeleteForm.action) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    const confirmed = window.confirm('Are you sure you want to delete this shortcut?');
+                    if (!confirmed) {
+                        event.preventDefault();
+                    }
+                });
+            }
+
+            if (createShortcutButton) {
+                createShortcutButton.addEventListener('click', setCreateMode);
+            }
+
+            document.querySelectorAll('.edit-shortcut-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    if (!shortcutForm || !shortcutMethodInput || !shortcutDeleteForm || !shortcutDeleteButton) {
+                        return;
+                    }
+
+                    const shortcutId = button.dataset.shortcutId;
+                    shortcutForm.action = `{{ url('/dashboard/shortcuts') }}/${shortcutId}`;
+                    shortcutMethodInput.value = 'PUT';
+                    shortcutModalLabel.textContent = 'Edit Shortcut';
+                    shortcutSubmitButton.innerHTML = '<i class="fas fa-save me-1"></i>Save Shortcut';
+                    shortcutNameInput.value = button.dataset.shortcutName || '';
+                    shortcutTypeInput.value = button.dataset.shortcutType || 'internal';
+                    shortcutUrlInput.value = button.dataset.shortcutUrl || '';
+                    shortcutCategoryInput.value = button.dataset.shortcutCategory || '';
+                    shortcutDeleteForm.action = `{{ url('/dashboard/shortcuts') }}/${shortcutId}`;
+                    shortcutDeleteButton.classList.remove('d-none');
+                });
+            });
+
+            setCreateMode();
+
             const applicationGrid = document.getElementById('application-grid');
             const saveOrderButton = document.getElementById('save-application-order');
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');

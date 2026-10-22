@@ -107,6 +107,33 @@ class UserDashboardPersonalizationTest extends TestCase
         $this->assertNotEmpty($shortcuts[0]['id']);
     }
 
+    public function test_user_can_update_shortcut(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_shortcuts' => [
+                ['id' => 'abc-1', 'name' => 'Old Name', 'type' => 'internal', 'url' => '/old', 'category' => 'Daily'],
+            ],
+        ]);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->put(route('dashboard.shortcuts.update', 'abc-1'), [
+                '_token' => 'test-token',
+                'name' => 'Updated Name',
+                'type' => 'external',
+                'url' => 'https://example.com/new',
+                'category' => 'daily',
+            ])
+            ->assertRedirect();
+
+        $updated = $user->refresh()->dashboard_shortcuts;
+        $this->assertCount(1, $updated);
+        $this->assertSame('Updated Name', $updated[0]['name']);
+        $this->assertSame('external', $updated[0]['type']);
+        $this->assertSame('https://example.com/new', $updated[0]['url']);
+        $this->assertSame('Daily', $updated[0]['category']);
+    }
+
     public function test_user_can_remove_shortcut(): void
     {
         $user = User::factory()->create([

@@ -46,6 +46,7 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 Route::get('/dashboard', [App\Http\Controllers\UserDashboardController::class, 'index'])->name('dashboard')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/applications/order', [App\Http\Controllers\UserDashboardController::class, 'saveApplicationOrder'])->name('dashboard.applications.order')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/shortcuts', [App\Http\Controllers\UserDashboardController::class, 'storeShortcut'])->name('dashboard.shortcuts.store')->middleware(['auth', 'auth.type']);
+Route::put('/dashboard/shortcuts/{shortcutId}', [App\Http\Controllers\UserDashboardController::class, 'updateShortcut'])->name('dashboard.shortcuts.update')->middleware(['auth', 'auth.type']);
 Route::delete('/dashboard/shortcuts/{shortcutId}', [App\Http\Controllers\UserDashboardController::class, 'destroyShortcut'])->name('dashboard.shortcuts.destroy')->middleware(['auth', 'auth.type']);
 Route::get('/profile', [App\Http\Controllers\UserDashboardController::class, 'profile'])->name('profile')->middleware(['auth', 'auth.type']);
 
