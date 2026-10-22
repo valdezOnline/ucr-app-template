@@ -34,6 +34,14 @@ AUTH_TYPE=laravel
 
 For detailed configuration instructions, see [AUTHENTICATION_GUIDE.md](AUTHENTICATION_GUIDE.md).
 
+## User Dashboard Personalization
+
+Authenticated users can personalize their dashboard:
+
+- **My Applications** tiles are draggable and the tile order can be saved per user.
+- **My Shortcuts** allows users to add and remove internal or external links.
+- Shortcuts can optionally be assigned a custom category (for example, "Daily" or "Reports").
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

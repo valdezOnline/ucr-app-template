@@ -33,6 +33,8 @@ class User extends Authenticatable
         'is_manager',
         'is_supervisor',
         'is_active',
+        'dashboard_application_order',
+        'dashboard_shortcuts',
         'password',
     ];
 
@@ -60,6 +62,8 @@ class User extends Authenticatable
             'is_manager' => 'boolean',
             'is_supervisor' => 'boolean',
             'is_active' => 'boolean',
+            'dashboard_application_order' => 'array',
+            'dashboard_shortcuts' => 'array',
         ];
     }
 

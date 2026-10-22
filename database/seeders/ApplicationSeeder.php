@@ -56,7 +56,7 @@ class ApplicationSeeder extends Seeder
             [
                 'name' => 'Student TimeTracker',
                 'description' => 'Time tracking system for student workers',
-                'url' => 'https://timetrack.library.ucr.edu',
+                'url' => 'https://timetracker.libportaltest.ucr.edu',
                 'icon' => 'fas fa-clock',
                 'is_active' => true,
                 'created_by' => $adminUser?->id,
@@ -81,7 +81,7 @@ class ApplicationSeeder extends Seeder
 
             // Assign roles to application
             foreach ($roleNames as $roleName) {
-                $role = Role::WhereFirst('name', $roleName)->first();
+                $role = Role::firstWhere('name', $roleName);
                 if ($role) {
                     $application->roles()->attach($role->id, ['assigned_by' => $adminUser?->id]);
                 }
