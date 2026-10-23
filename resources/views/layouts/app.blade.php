@@ -45,6 +45,21 @@
                 </div>
             @endif
 
+            @if (($activeSiteStatus ?? null) && auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->is_admin))
+                <div class="alert alert-dark d-flex flex-column flex-md-row justify-content-between align-items-md-center"
+                    role="alert">
+                    <div>
+                        <i class="fas fa-tools me-2"></i>
+                        <strong>Site Status Active:</strong>
+                        {{ $activeSiteStatus->displayTitle() }} —
+                        {{ $activeSiteStatus->displayMessage() }}
+                    </div>
+                    <a class="btn btn-sm btn-outline-light mt-3 mt-md-0" href="{{ route('site-status-config.edit') }}">
+                        <i class="fas fa-cog me-1"></i>Manage Site Status
+                    </a>
+                </div>
+            @endif
+
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
                     <i class="fas fa-check-circle me-2"></i>{{ session('success') }}

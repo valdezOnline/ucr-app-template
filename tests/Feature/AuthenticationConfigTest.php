@@ -109,11 +109,26 @@ class AuthenticationConfigTest extends TestCase
     public function test_login_route_name_falls_back_to_laravel_login_when_cas_route_missing()
     {
         Config::set('auth.type', 'cas');
+        Config::set('cas.cas_hostname', 'sso.ucr.edu');
 
         Route::shouldReceive('has')
             ->once()
             ->with('cas.login')
             ->andReturn(false);
+
+        $this->assertEquals('login', AuthenticationService::getLoginRouteName());
+    }
+
+    public function test_login_route_name_falls_back_to_laravel_login_when_cas_is_not_usable()
+    {
+        Config::set('auth.type', 'cas');
+        Config::set('cas.cas_hostname', 'cas.myuniv.edu');
+        Config::set('cas.cas_masquerade', null);
+
+        Route::shouldReceive('has')
+            ->once()
+            ->with('cas.login')
+            ->andReturn(true);
 
         $this->assertEquals('login', AuthenticationService::getLoginRouteName());
     }

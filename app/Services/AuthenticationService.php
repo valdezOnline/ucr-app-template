@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use InvalidArgumentException;
 
 class AuthenticationService
 {
@@ -72,7 +75,11 @@ class AuthenticationService
      */
     public static function getLoginRouteName(): string
     {
-        if (self::isCasAuth() && Route::has('cas.login')) {
+        if (
+            self::isCasAuth() &&
+            Route::has('cas.login') &&
+            (self::isCasAvailable() || self::hasValidCasMasqueradeUser())
+        ) {
             return 'cas.login';
         }
 
@@ -172,5 +179,40 @@ class AuthenticationService
             'password_reset_enabled' => self::passwordResetEnabled(),
             'api_version' => '1.0',
         ];
+    }
+
+    /**
+     * Persist authentication type to .env and clear caches.
+     */
+    public static function persistAuthType(string $type): void
+    {
+        if (!in_array($type, ['laravel', 'cas'], true)) {
+            throw new InvalidArgumentException('Invalid auth type provided.');
+        }
+
+        $envPath = base_path('.env');
+        $envContent = File::get($envPath);
+
+        if (preg_match('/^AUTH_TYPE=.*$/m', $envContent)) {
+            $envContent = preg_replace('/^AUTH_TYPE=.*$/m', "AUTH_TYPE={$type}", $envContent);
+        } else {
+            $envContent = preg_replace(
+                '/^(APP_TIMEZONE=.*$)/m',
+                "$1\n\n# Authentication Configuration\n# Options: 'laravel' (default) or 'cas'\nAUTH_TYPE={$type}",
+                $envContent
+            );
+        }
+
+        File::put($envPath, $envContent);
+
+        putenv("AUTH_TYPE={$type}");
+        $_ENV['AUTH_TYPE'] = $type;
+        $_SERVER['AUTH_TYPE'] = $type;
+        Config::set('auth.type', $type);
+
+        Artisan::call('config:clear');
+        if (app()->routesAreCached()) {
+            Artisan::call('route:clear');
+        }
     }
 }

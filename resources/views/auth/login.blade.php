@@ -20,7 +20,9 @@
                             </div>
                         @endif
 
-                        @casauth
+                        @if (\App\Services\AuthenticationService::isCasAuth() &&
+                                (\App\Services\AuthenticationService::isCasAvailable() ||
+                                    \App\Services\AuthenticationService::hasValidCasMasqueradeUser()))
                             {{-- CAS Authentication --}}
                             <div class="text-center">
                                 <p class="mb-4">Please sign in using your institutional credentials.</p>
@@ -42,6 +44,13 @@
                             @endif
                         @else
                             {{-- Laravel Authentication --}}
+                            @if (\App\Services\AuthenticationService::isCasAuth())
+                                <div class="alert alert-warning">
+                                    CAS authentication is enabled but currently unavailable. Local login is temporarily
+                                    enabled so administrators can regain access.
+                                </div>
+                            @endif
+
                             <form method="POST" action="{{ route('login') }}">
                                 @csrf
 
@@ -116,7 +125,7 @@
                                     </a>
                                 </div>
                             @endif
-                        @endcasauth
+                        @endif
                     </div>
                 </div>
             </div>

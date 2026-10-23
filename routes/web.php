@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\AdminImpersonationController;
+use App\Http\Controllers\SiteStatusController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -11,6 +12,7 @@ Route::get('/', function () {
 Route::get('/help', function () {
     return view('help');
 })->name('help');
+Route::get('/site-status', [SiteStatusController::class, 'show'])->name('site-status.show');
 
 Route::get('/test-auth', function () {
     return response()->json([
@@ -79,6 +81,8 @@ Route::middleware(['auth', 'auth.type'])->group(function () {
     // Authentication Configuration Routes (Admin only)
     Route::get('admin/auth-config', [App\Http\Controllers\AuthConfigController::class, 'index'])->name('auth-config.index');
     Route::put('admin/auth-config', [App\Http\Controllers\AuthConfigController::class, 'update'])->name('auth-config.update');
+    Route::get('admin/site-status', [SiteStatusController::class, 'edit'])->name('site-status-config.edit');
+    Route::put('admin/site-status', [SiteStatusController::class, 'update'])->name('site-status-config.update');
 
     // Admin impersonation routes
     Route::post('admin/impersonation/stop', [AdminImpersonationController::class, 'stop'])->name('admin.impersonation.stop');

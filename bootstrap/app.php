@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->web(append: [
+            \App\Http\Middleware\SiteStatusMiddleware::class,
+        ]);
+
         $middleware->alias([
             'auth.type' => \App\Http\Middleware\AuthenticationTypeMiddleware::class,
             'api.app.auth' => \App\Http\Middleware\ApiApplicationAuth::class,

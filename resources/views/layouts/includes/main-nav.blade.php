@@ -130,6 +130,14 @@
                                                 <i class="fas fa-cog me-1"></i>Authentication Config
                                             </a>
                                         </li>
+                                        @if (auth()->user()->hasRole('admin') || auth()->user()->is_admin)
+                                            <li>
+                                                <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
+                                                    href="{{ route('site-status-config.edit') }}">
+                                                    <i class="fas fa-tools me-1"></i>Site Status
+                                                </a>
+                                            </li>
+                                        @endif
                                         <li>
                                             <hr class="dropdown-divider">
                                         </li>

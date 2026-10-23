@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AuthenticationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
 
 class AuthConfigController extends Controller
 {
@@ -57,30 +55,7 @@ class AuthConfigController extends Controller
         $currentUserId = $currentUser ? $currentUser->id : null;
         $currentUserNetId = $currentUser ? $currentUser->net_id : null;
 
-        // Read current .env file
-        $envPath = base_path('.env');
-        $envContent = File::get($envPath);
-
-        // Update or add AUTH_TYPE
-        if (preg_match('/^AUTH_TYPE=.*$/m', $envContent)) {
-            $envContent = preg_replace('/^AUTH_TYPE=.*$/m', "AUTH_TYPE={$newType}", $envContent);
-        } else {
-            // Add after APP_TIMEZONE if AUTH_TYPE doesn't exist
-            $envContent = preg_replace(
-                '/^(APP_TIMEZONE=.*$)/m',
-                "$1\n\n# Authentication Configuration\n# Options: 'laravel' (default) or 'cas'\nAUTH_TYPE={$newType}",
-                $envContent
-            );
-        }
-
-        // Write back to .env file
-        File::put($envPath, $envContent);
-
-        // Clear config cache to ensure changes take effect
-        Artisan::call('config:clear');
-        if (app()->routesAreCached()) {
-            Artisan::call('route:clear');
-        }
+        AuthenticationService::persistAuthType($newType);
 
         // Handle the authentication transition
         if ($newType === 'cas') {

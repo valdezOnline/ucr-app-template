@@ -234,6 +234,11 @@
                                         <i class="fas fa-user-slash me-2"></i>Inactive Users
                                     </a>
                                 </div>
+                                <div class="col-md-6 mb-3">
+                                    <a href="{{ route('site-status-config.edit') }}" class="btn btn-outline-warning w-100">
+                                        <i class="fas fa-tools me-2"></i>Site Status
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>

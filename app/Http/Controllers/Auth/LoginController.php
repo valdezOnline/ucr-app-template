@@ -46,8 +46,10 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
+        $casUsable = AuthenticationService::isCasAvailable() || AuthenticationService::hasValidCasMasqueradeUser();
+
         // Local email/password login is disabled while CAS authentication is active.
-        if (AuthenticationService::isCasAuth()) {
+        if (AuthenticationService::isCasAuth() && $casUsable) {
             return redirect()->route('login')->with(
                 'info',
                 'Local login is disabled while CAS authentication is active. Please use "Sign In with CAS".'

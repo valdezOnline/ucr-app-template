@@ -34,6 +34,20 @@ AUTH_TYPE=laravel
 
 For detailed configuration instructions, see [AUTHENTICATION_GUIDE.md](AUTHENTICATION_GUIDE.md).
 
+## Site Status Modes (Admin Controlled)
+
+Administrators can place the full website into one of the following status modes from `/admin/site-status`:
+
+- **Maintenance Mode**
+- **Experiencing Technical Issue**
+- **Customizable Message**
+
+When any of the three modes is enabled, all guests and non-admin users are redirected to the public status page (`/site-status`) and will see the configured message. Admin users can still access the admin interface to update or disable the mode.
+
+Saving Site Status also automatically updates authentication mode:
+- When Site Status is active (`Maintenance`, `Experiencing Technical Issue`, or `Customizable Message`), auth is switched to `laravel`.
+- When Site Status is turned off (`Site Available`), auth is switched to `cas`.
+
 ## User Dashboard Personalization
 
 Authenticated users can personalize their dashboard:

@@ -1,4 +1,4 @@
-FROM php:8.4-cli
+FROM php:8.5.12-cli
 
 # Install system dependencies and PHP extensions needed by the app.
 RUN apt-get update \
