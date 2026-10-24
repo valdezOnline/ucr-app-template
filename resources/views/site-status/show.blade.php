@@ -1,15 +1,9 @@
-<!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@extends('layouts.app')
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'App Template') }} - {{ $siteStatus->displayTitle() }}</title>
-    @vite(['resources/sass/app.scss', 'resources/css/app.css', 'resources/css/custom.css', 'resources/js/app.js'])
-</head>
+@section('title', $siteStatus->displayTitle())
 
-<body class="bg-light">
-    <main class="container py-5">
+@section('content')
+    <div class="container py-5">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="card shadow-sm border-0">
@@ -26,7 +20,5 @@
                 </div>
             </div>
         </div>
-    </main>
-</body>
-
-</html>
+    </div>
+@endsection
