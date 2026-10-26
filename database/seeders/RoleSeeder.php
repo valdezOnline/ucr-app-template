@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
-use App\Models\User;
+use Modules\Core\Models\Role;
+use Modules\Core\Models\User;
 use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
@@ -25,9 +25,17 @@ class RoleSeeder extends Seeder
                 'created_by' => $adminUser?->id,
             ],
             [
+                'name' => 'library_supervisor',
+                'display_name' => 'Library Supervisor',
+                'description' => 'Library supervisor with elevated permissions',
+                'color' => '#007bff',
+                'is_active' => true,
+                'created_by' => $adminUser?->id,
+            ],            
+            [
                 'name' => 'library_manager',
                 'display_name' => 'Library Manager',
-                'description' => 'Library managers with elevated permissions',
+                'description' => 'Library managers with a more significant level of elevated permissions',
                 'color' => '#007bff',
                 'is_active' => true,
                 'created_by' => $adminUser?->id,
@@ -45,14 +53,6 @@ class RoleSeeder extends Seeder
                 'display_name' => 'Student Worker',
                 'description' => 'Student employees with limited access',
                 'color' => '#fd7e14',
-                'is_active' => true,
-                'created_by' => $adminUser?->id,
-            ],
-            [
-                'name' => 'department_liaison',
-                'display_name' => 'Department Liaison',
-                'description' => 'Academic department liaisons',
-                'color' => '#20c997',
                 'is_active' => true,
                 'created_by' => $adminUser?->id,
             ],

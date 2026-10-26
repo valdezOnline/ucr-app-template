@@ -37,7 +37,7 @@ class MakeModuleCommandTest extends TestCase
         $this->assertTrue(File::isDirectory($modulePath));
         $this->assertTrue(File::exists("{$modulePath}/module.php"));
         $this->assertTrue(File::exists("{$modulePath}/Providers/{$moduleName}ServiceProvider.php"));
-        $this->assertTrue(File::exists("{$modulePath}/Http/Controllers/{$moduleName}Controller.php"));
+        $this->assertTrue(File::exists("{$modulePath}/Presentation/Http/Controllers/{$moduleName}Controller.php"));
         $this->assertTrue(File::exists("{$modulePath}/routes/web.php"));
         $this->assertTrue(File::exists("{$modulePath}/routes/api.php"));
         $this->assertTrue(File::exists("{$modulePath}/resources/views/index.blade.php"));

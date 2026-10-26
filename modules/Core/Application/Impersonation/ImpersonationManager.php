@@ -2,7 +2,7 @@
 
 namespace Modules\Core\Application\Impersonation;
 
-use App\Models\User;
+use Modules\Core\Models\User;
 use Illuminate\Http\Request;
 use Modules\Core\Domain\Impersonation\Contracts\ImpersonationGateway;
 

@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Application;
-use App\Models\Role;
-use App\Models\User;
+use Modules\Core\Models\Application;
+use Modules\Core\Models\Role;
+use Modules\Core\Models\User;
 use Illuminate\Database\Seeder;
 
 class ApplicationSeeder extends Seeder

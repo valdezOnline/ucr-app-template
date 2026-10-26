@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\SiteStatusSetting;
-use App\Models\User;
+use Modules\Core\Models\SiteStatusSetting;
+use Modules\Core\Models\User;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;

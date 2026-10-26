@@ -56,7 +56,7 @@
                                         <select class="form-select @error('url_type') is-invalid @enderror" id="url_type"
                                             name="url_type" required onchange="toggleUrlFields()">
                                             <option value="">Select URL Type</option>
-                                            @foreach (\App\Models\Application::getUrlTypeOptions() as $value => $label)
+                                            @foreach (\Modules\Core\Models\Application::getUrlTypeOptions() as $value => $label)
                                                 <option value="{{ $value }}"
                                                     {{ old('url_type') === $value ? 'selected' : '' }}>
                                                     {{ $label }}

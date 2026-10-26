@@ -521,7 +521,7 @@
                             <label for="user_id" class="form-label">Select User</label>
                             <select class="form-select" id="user_id" name="user_id" required>
                                 <option value="">Choose a user...</option>
-                                @foreach (\App\Models\User::active()->orderBy('last_name')->orderBy('first_name')->get() as $availableUser)
+                                @foreach (\Modules\Core\Models\User::active()->orderBy('last_name')->orderBy('first_name')->get() as $availableUser)
                                     <option value="{{ $availableUser->id }}">
                                         {{ $availableUser->full_name }} ({{ $availableUser->net_id }})
                                         @if ($availableUser->department)

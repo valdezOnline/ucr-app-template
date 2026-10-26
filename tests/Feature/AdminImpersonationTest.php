@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\ImpersonationAudit;
-use App\Models\User;
+use Modules\Core\Models\ImpersonationAudit;
+use Modules\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

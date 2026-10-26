@@ -2,8 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\UserController;
+use Modules\Core\Presentation\Http\Controllers\Api\AuthController;
+use Modules\Core\Presentation\Http\Controllers\Api\UserController;
 
 /*
 |--------------------------------------------------------------------------

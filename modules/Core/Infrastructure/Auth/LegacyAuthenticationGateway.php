@@ -2,7 +2,7 @@
 
 namespace Modules\Core\Infrastructure\Auth;
 
-use App\Models\User;
+use Modules\Core\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;

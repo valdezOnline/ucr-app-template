@@ -198,7 +198,7 @@
                                                                 </td>
                                                                 <td>
                                                                     @if ($user->pivot->assigned_by)
-                                                                        <small>{{ \App\Models\User::find($user->pivot->assigned_by)?->full_name ?? 'Unknown' }}</small>
+                                                                        <small>{{ \Modules\Core\Models\User::find($user->pivot->assigned_by)?->full_name ?? 'Unknown' }}</small>
                                                                     @else
                                                                         <small class="text-muted">System</small>
                                                                     @endif

@@ -11,14 +11,17 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        __DIR__ . '/../modules/Core/Console/Commands',
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
-            \App\Http\Middleware\SiteStatusMiddleware::class,
+            \Modules\Core\Presentation\Http\Middleware\SiteStatusMiddleware::class,
         ]);
 
         $middleware->alias([
-            'auth.type' => \App\Http\Middleware\AuthenticationTypeMiddleware::class,
-            'api.app.auth' => \App\Http\Middleware\ApiApplicationAuth::class,
+            'auth.type' => \Modules\Core\Presentation\Http\Middleware\AuthenticationTypeMiddleware::class,
+            'api.app.auth' => \Modules\Core\Presentation\Http\Middleware\ApiApplicationAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -2,8 +2,8 @@
 
 namespace Modules\Core\Infrastructure\Impersonation;
 
-use App\Models\ImpersonationAudit;
-use App\Models\User;
+use Modules\Core\Models\ImpersonationAudit;
+use Modules\Core\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;

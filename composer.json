@@ -34,8 +34,7 @@
             "Database\\Seeders\\": "database/seeders/"
         },
         "files": [
-            "app/Helpers/EncryptionHelper.php",
-            "app/Helpers/CasHelper.php"
+            "modules/Core/Support/CasHelper.php"
         ]
     },
     "autoload-dev": {
