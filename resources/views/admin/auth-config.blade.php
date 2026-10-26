@@ -39,7 +39,7 @@
                                 <div class="p-3 bg-light rounded">
                                     <strong>Authentication Type:</strong>
                                     <span class="badge bg-{{ $currentType === 'cas' ? 'info' : 'primary' }} ms-2">
-                                        {{ \App\Services\AuthenticationService::getTypeDisplayName() }}
+                                        {{ $currentTypeDisplayName }}
                                     </span>
 
                                     @if ($currentType === 'cas')
@@ -62,10 +62,10 @@
                                 <div class="p-3 bg-light rounded">
                                     <ul class="list-unstyled mb-0 small">
                                         <li><strong>Registration:</strong>
-                                            {{ \App\Services\AuthenticationService::registrationEnabled() ? 'Enabled' : 'Disabled' }}
+                                            {{ $registrationEnabled ? 'Enabled' : 'Disabled' }}
                                         </li>
                                         <li><strong>Password Reset:</strong>
-                                            {{ \App\Services\AuthenticationService::passwordResetEnabled() ? 'Enabled' : 'Disabled' }}
+                                            {{ $passwordResetEnabled ? 'Enabled' : 'Disabled' }}
                                         </li>
                                         <li><strong>SSO:</strong>
                                             {{ $currentType === 'cas' ? 'Enabled' : 'Disabled' }}

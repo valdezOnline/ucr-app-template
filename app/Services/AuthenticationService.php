@@ -2,21 +2,24 @@
 
 namespace App\Services;
 
-use App\Models\User;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Route;
-use InvalidArgumentException;
+use Modules\Core\Domain\Auth\Contracts\AuthenticationGateway;
 
+/**
+ * @deprecated Use Modules\Core\Application\Auth\AuthenticationManager via dependency injection.
+ */
 class AuthenticationService
 {
+    private static function gateway(): AuthenticationGateway
+    {
+        return app(AuthenticationGateway::class);
+    }
+
     /**
      * Get the current authentication type
      */
     public static function getType(): string
     {
-        return Config::get('auth.type', 'laravel');
+        return self::gateway()->getType();
     }
 
     /**
@@ -24,7 +27,7 @@ class AuthenticationService
      */
     public static function isLaravelAuth(): bool
     {
-        return self::getType() === 'laravel';
+        return self::gateway()->isLaravelAuth();
     }
 
     /**
@@ -32,7 +35,7 @@ class AuthenticationService
      */
     public static function isCasAuth(): bool
     {
-        return self::getType() === 'cas';
+        return self::gateway()->isCasAuth();
     }
 
     /**
@@ -40,10 +43,7 @@ class AuthenticationService
      */
     public static function isCasAvailable(): bool
     {
-        return self::isCasAuth() &&
-            function_exists('cas') &&
-            Config::get('cas.cas_hostname') &&
-            Config::get('cas.cas_hostname') !== 'cas.myuniv.edu';
+        return self::gateway()->isCasAvailable();
     }
 
     /**
@@ -51,15 +51,7 @@ class AuthenticationService
      */
     public static function hasValidCasMasqueradeUser(): bool
     {
-        $masqueradeUser = trim((string) Config::get('cas.cas_masquerade', ''));
-
-        if ($masqueradeUser === '') {
-            return false;
-        }
-
-        return User::where('net_id', $masqueradeUser)
-            ->where('is_active', true)
-            ->exists();
+        return self::gateway()->hasValidCasMasqueradeUser();
     }
 
     /**
@@ -67,7 +59,7 @@ class AuthenticationService
      */
     public static function getLoginRoute(): string
     {
-        return route(self::getLoginRouteName());
+        return self::gateway()->getLoginRoute();
     }
 
     /**
@@ -75,15 +67,7 @@ class AuthenticationService
      */
     public static function getLoginRouteName(): string
     {
-        if (
-            self::isCasAuth() &&
-            Route::has('cas.login') &&
-            (self::isCasAvailable() || self::hasValidCasMasqueradeUser())
-        ) {
-            return 'cas.login';
-        }
-
-        return 'login';
+        return self::gateway()->getLoginRouteName();
     }
 
     /**
@@ -91,7 +75,7 @@ class AuthenticationService
      */
     public static function getLogoutRoute(): string
     {
-        return route(self::getLogoutRouteName());
+        return self::gateway()->getLogoutRoute();
     }
 
     /**
@@ -99,11 +83,7 @@ class AuthenticationService
      */
     public static function getLogoutRouteName(): string
     {
-        if (self::isCasAuth() && Route::has('cas.logout')) {
-            return 'cas.logout';
-        }
-
-        return 'logout';
+        return self::gateway()->getLogoutRouteName();
     }
 
     /**
@@ -112,7 +92,7 @@ class AuthenticationService
      */
     public static function registrationEnabled(): bool
     {
-        return self::isLaravelAuth();
+        return self::gateway()->registrationEnabled();
     }
 
     /**
@@ -121,7 +101,7 @@ class AuthenticationService
      */
     public static function passwordResetEnabled(): bool
     {
-        return self::isLaravelAuth();
+        return self::gateway()->passwordResetEnabled();
     }
 
     /**
@@ -129,11 +109,7 @@ class AuthenticationService
      */
     public static function getTypeDisplayName(): string
     {
-        return match (self::getType()) {
-            'cas' => 'CAS (Single Sign-On)',
-            'laravel' => 'Local Authentication',
-            default => 'Unknown'
-        };
+        return self::gateway()->getTypeDisplayName();
     }
 
     /**
@@ -141,7 +117,7 @@ class AuthenticationService
      */
     public static function isApiAuthAvailable(): bool
     {
-        return true; // API authentication is always available
+        return self::gateway()->isApiAuthAvailable();
     }
 
     /**
@@ -149,21 +125,7 @@ class AuthenticationService
      */
     public static function getAvailableMethods(): array
     {
-        $methods = [];
-
-        if (self::isLaravelAuth()) {
-            $methods[] = 'laravel';
-        }
-
-        if (self::isCasAvailable()) {
-            $methods[] = 'cas';
-        }
-
-        if (self::isApiAuthAvailable()) {
-            $methods[] = 'api';
-        }
-
-        return $methods;
+        return self::gateway()->getAvailableMethods();
     }
 
     /**
@@ -171,14 +133,7 @@ class AuthenticationService
      */
     public static function getApiConfig(): array
     {
-        return [
-            'type' => self::getType(),
-            'cas_available' => self::isCasAvailable(),
-            'laravel_available' => self::isLaravelAuth(),
-            'registration_enabled' => self::registrationEnabled(),
-            'password_reset_enabled' => self::passwordResetEnabled(),
-            'api_version' => '1.0',
-        ];
+        return self::gateway()->getApiConfig();
     }
 
     /**
@@ -186,33 +141,6 @@ class AuthenticationService
      */
     public static function persistAuthType(string $type): void
     {
-        if (!in_array($type, ['laravel', 'cas'], true)) {
-            throw new InvalidArgumentException('Invalid auth type provided.');
-        }
-
-        $envPath = base_path('.env');
-        $envContent = File::get($envPath);
-
-        if (preg_match('/^AUTH_TYPE=.*$/m', $envContent)) {
-            $envContent = preg_replace('/^AUTH_TYPE=.*$/m', "AUTH_TYPE={$type}", $envContent);
-        } else {
-            $envContent = preg_replace(
-                '/^(APP_TIMEZONE=.*$)/m',
-                "$1\n\n# Authentication Configuration\n# Options: 'laravel' (default) or 'cas'\nAUTH_TYPE={$type}",
-                $envContent
-            );
-        }
-
-        File::put($envPath, $envContent);
-
-        putenv("AUTH_TYPE={$type}");
-        $_ENV['AUTH_TYPE'] = $type;
-        $_SERVER['AUTH_TYPE'] = $type;
-        Config::set('auth.type', $type);
-
-        Artisan::call('config:clear');
-        if (app()->routesAreCached()) {
-            Artisan::call('route:clear');
-        }
+        self::gateway()->persistAuthType($type);
     }
 }

@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\SiteStatusSetting;
-use App\Services\AuthenticationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Core\Application\Auth\AuthenticationManager;
 
 class SiteStatusController extends Controller
 {
-    public function __construct()
+    public function __construct(
+        private readonly AuthenticationManager $authenticationManager,
+    )
     {
         $this->middleware(['auth', 'auth.type'])->except('show');
         $this->middleware(function ($request, $next) {
@@ -57,10 +59,10 @@ class SiteStatusController extends Controller
         ]);
 
         $targetAuthType = $siteStatus->isActive() ? 'laravel' : 'cas';
-        $currentAuthType = AuthenticationService::getType();
+        $currentAuthType = $this->authenticationManager->getType();
 
         if ($currentAuthType !== $targetAuthType) {
-            AuthenticationService::persistAuthType($targetAuthType);
+            $this->authenticationManager->switchAuthenticationType($targetAuthType);
 
             if ($targetAuthType === 'cas') {
                 Auth::logout();

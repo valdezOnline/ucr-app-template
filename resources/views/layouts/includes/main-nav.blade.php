@@ -61,6 +61,14 @@
                                                 <i class="fas fa-users me-1"></i>Manage Users
                                             </a>
                                         </li>
+                                        @if (auth()->user()->hasRole('admin') || auth()->user()->is_admin)
+                                            <li>
+                                                <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
+                                                    href="{{ route('admin.email-dispatches.index') }}">
+                                                    <i class="fas fa-envelope-open-text me-1"></i>Email Dispatch Monitor
+                                                </a>
+                                            </li>
+                                        @endif
                                     </ul>
                                 </li>
                             @endif
@@ -135,6 +143,12 @@
                                                 <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
                                                     href="{{ route('site-status-config.edit') }}">
                                                     <i class="fas fa-tools me-1"></i>Site Status
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
+                                                    href="{{ route('admin.email-dispatches.index') }}">
+                                                    <i class="fas fa-envelope-open-text me-1"></i>Email Dispatch Monitor
                                                 </a>
                                             </li>
                                         @endif

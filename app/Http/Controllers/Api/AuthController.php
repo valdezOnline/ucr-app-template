@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\ExternalAuthorizationCode;
 use App\Models\User;
-use App\Services\AuthenticationService;
 // use App\Services\CasService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -15,9 +14,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Modules\Core\Application\Auth\AuthenticationManager;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        private readonly AuthenticationManager $authenticationManager,
+    ) {
+    }
+
     /**
      * Start external browser-based authorization using CAS.
      */
@@ -753,7 +758,7 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'API is healthy',
             'timestamp' => now()->toISOString(),
-            'auth_type' => AuthenticationService::getType(),
+            'auth_type' => $this->authenticationManager->getType(),
             'version' => config('app.version', '1.0.0'),
         ]);
     }

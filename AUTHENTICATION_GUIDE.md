@@ -118,31 +118,34 @@ Custom Blade directives are available for conditional rendering:
 @endcasavailable
 ```
 
-## Helper Service
+## Core Authentication Manager
 
-The `AuthenticationService` provides methods for checking authentication configuration:
+Use `AuthenticationManager` (from the Core module) for authentication configuration checks:
 
 ```php
-use App\Services\AuthenticationService;
+use Modules\Core\Application\Auth\AuthenticationManager;
+
+$authenticationManager = app(AuthenticationManager::class);
 
 // Check authentication type
-$type = AuthenticationService::getType(); // 'laravel' or 'cas'
+$type = $authenticationManager->getType(); // 'laravel' or 'cas'
 
 // Check if specific type is enabled
-$isLaravel = AuthenticationService::isLaravelAuth();
-$isCas = AuthenticationService::isCasAuth();
+$isLaravel = $authenticationManager->isLaravelAuth();
+$isCas = $authenticationManager->isCasAuth();
 
 // Check if CAS is properly configured
-$casAvailable = AuthenticationService::isCasAvailable();
+$casAvailable = $authenticationManager->isCasAvailable();
 
 // Get appropriate routes
-$loginRoute = AuthenticationService::getLoginRoute();
-$logoutRoute = AuthenticationService::getLogoutRoute();
+$loginRouteName = $authenticationManager->getLoginRouteName();
 
 // Check feature availability
-$canRegister = AuthenticationService::registrationEnabled();
-$canResetPassword = AuthenticationService::passwordResetEnabled();
+$canRegister = $authenticationManager->registrationEnabled();
+$canResetPassword = $authenticationManager->passwordResetEnabled();
 ```
+
+`App\Services\AuthenticationService` remains available as a compatibility wrapper, but new code should use `AuthenticationManager` via dependency injection.
 
 ## Admin Impersonation
 

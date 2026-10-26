@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Services\AuthenticationService;
-use App\Services\ImpersonationService;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Modules\Core\Application\Auth\AuthenticationManager;
+use Modules\Core\Application\Impersonation\ImpersonationManager;
 
 class LoginController extends Controller
 {
@@ -32,6 +32,15 @@ class LoginController extends Controller
      */
     protected $redirectTo = '/dashboard';
 
+    public function __construct(
+        private readonly AuthenticationManager $authenticationManager,
+        private readonly ImpersonationManager $impersonationManager,
+    )
+    {
+        $this->middleware('guest')->except('logout');
+        $this->middleware('auth')->only('logout');
+    }
+
     /**
      * Show the application's login form.
      */
@@ -46,10 +55,11 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        $casUsable = AuthenticationService::isCasAvailable() || AuthenticationService::hasValidCasMasqueradeUser();
+        $casUsable = $this->authenticationManager->isCasAvailable()
+            || $this->authenticationManager->hasValidCasMasqueradeUser();
 
         // Local email/password login is disabled while CAS authentication is active.
-        if (AuthenticationService::isCasAuth() && $casUsable) {
+        if ($this->authenticationManager->isCasAuth() && $casUsable) {
             return redirect()->route('login')->with(
                 'info',
                 'Local login is disabled while CAS authentication is active. Please use "Sign In with CAS".'
@@ -80,24 +90,13 @@ class LoginController extends Controller
     }
 
     /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->middleware('guest')->except('logout');
-        $this->middleware('auth')->only('logout');
-    }
-
-    /**
      * Log the user out of the application.
      */
     public function logout(Request $request)
     {
-        if (ImpersonationService::isImpersonating()) {
+        if ($this->impersonationManager->isImpersonating()) {
             try {
-                ImpersonationService::stop($request, 'logout');
+                $this->impersonationManager->stop($request, 'logout');
 
                 return redirect()->route('home')->with(
                     'success',

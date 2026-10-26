@@ -3,14 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Services\ImpersonationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Modules\Core\Application\Impersonation\ImpersonationManager;
 
 class AdminImpersonationController extends Controller
 {
-    public function __construct()
+    public function __construct(
+        private readonly ImpersonationManager $impersonationManager,
+    )
     {
         $this->middleware(['auth', 'auth.type']);
     }
@@ -27,7 +29,7 @@ class AdminImpersonationController extends Controller
         }
 
         try {
-            ImpersonationService::start($admin, $user, $request);
+            $this->impersonationManager->start($admin, $user, $request);
 
             return redirect()->route('dashboard')->with(
                 'success',
@@ -51,12 +53,12 @@ class AdminImpersonationController extends Controller
      */
     public function stop(Request $request): RedirectResponse
     {
-        if (!ImpersonationService::isImpersonating()) {
+        if (!$this->impersonationManager->isImpersonating()) {
             return redirect()->back()->with('warning', 'No active impersonation session was found.');
         }
 
         try {
-            ImpersonationService::stop($request);
+            $this->impersonationManager->stop($request);
 
             return redirect()->route('home')->with(
                 'success',

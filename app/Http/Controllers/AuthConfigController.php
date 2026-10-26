@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\AuthenticationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Modules\Core\Application\Auth\AuthenticationManager;
 
 class AuthConfigController extends Controller
 {
-    public function __construct()
+    public function __construct(
+        private readonly AuthenticationManager $authenticationManager,
+    )
     {
         $this->middleware(['auth', 'auth.type']);
         $this->middleware(function ($request, $next) {
@@ -25,10 +27,19 @@ class AuthConfigController extends Controller
      */
     public function index()
     {
-        $currentType = AuthenticationService::getType();
-        $casAvailable = AuthenticationService::isCasAvailable();
+        $currentType = $this->authenticationManager->getType();
+        $casAvailable = $this->authenticationManager->isCasAvailable();
+        $currentTypeDisplayName = $this->authenticationManager->getTypeDisplayName();
+        $registrationEnabled = $this->authenticationManager->registrationEnabled();
+        $passwordResetEnabled = $this->authenticationManager->passwordResetEnabled();
 
-        return view('admin.auth-config', compact('currentType', 'casAvailable'));
+        return view('admin.auth-config', compact(
+            'currentType',
+            'casAvailable',
+            'currentTypeDisplayName',
+            'registrationEnabled',
+            'passwordResetEnabled'
+        ));
     }
 
     /**
@@ -40,14 +51,14 @@ class AuthConfigController extends Controller
             'auth_type' => 'required|in:laravel,cas'
         ]);
 
-        $currentType = AuthenticationService::getType();
+        $currentType = $this->authenticationManager->getType();
         $newType = $request->input('auth_type');
 
         // If no change, redirect back with message
         if ($currentType === $newType) {
             return redirect()
                 ->route('auth-config.index')
-                ->with('info', 'Authentication type is already set to: ' . AuthenticationService::getTypeDisplayName());
+                ->with('info', 'Authentication type is already set to: ' . $this->authenticationManager->getTypeDisplayName());
         }
 
         // Store current user info for re-authentication
@@ -55,7 +66,7 @@ class AuthConfigController extends Controller
         $currentUserId = $currentUser ? $currentUser->id : null;
         $currentUserNetId = $currentUser ? $currentUser->net_id : null;
 
-        AuthenticationService::persistAuthType($newType);
+        $this->authenticationManager->switchAuthenticationType($newType);
 
         // Handle the authentication transition
         if ($newType === 'cas') {
@@ -78,7 +89,7 @@ class AuthConfigController extends Controller
 
             return redirect()
                 ->route('auth-config.index')
-                ->with('success', 'Authentication type updated to: ' . AuthenticationService::getTypeDisplayName());
+                ->with('success', 'Authentication type updated to: ' . $this->authenticationManager->getTypeDisplayName());
         }
     }
 }

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\SiteStatusSetting;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
+use Modules\Core\Application\Auth\AuthenticationManager;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +26,7 @@ class AppServiceProvider extends ServiceProvider
         view()->composer('*', function ($view) {
             static $resolvedSiteStatus = false;
             static $activeSiteStatus = null;
+            $authenticationManager = app(AuthenticationManager::class);
 
             if (!$resolvedSiteStatus) {
                 if (Schema::hasTable('site_status_settings')) {
@@ -36,27 +38,29 @@ class AppServiceProvider extends ServiceProvider
             }
 
             $view->with([
-                'authType' => config('auth.type', 'laravel'),
-                'isCasAuth' => config('auth.type') === 'cas',
-                'isLaravelAuth' => config('auth.type', 'laravel') === 'laravel',
+                'authType' => $authenticationManager->getType(),
+                'isCasAuth' => $authenticationManager->isCasAuth(),
+                'isLaravelAuth' => $authenticationManager->isLaravelAuth(),
+                'casAvailable' => $authenticationManager->isCasAvailable(),
+                'hasValidCasMasqueradeUser' => $authenticationManager->hasValidCasMasqueradeUser(),
+                'authTypeDisplayName' => $authenticationManager->getTypeDisplayName(),
+                'registrationEnabled' => $authenticationManager->registrationEnabled(),
+                'passwordResetEnabled' => $authenticationManager->passwordResetEnabled(),
                 'activeSiteStatus' => $activeSiteStatus,
             ]);
         });
 
         // Custom Blade directives for authentication type checking
         \Illuminate\Support\Facades\Blade::if('casauth', function () {
-            return config('auth.type') === 'cas';
+            return app(AuthenticationManager::class)->isCasAuth();
         });
 
         \Illuminate\Support\Facades\Blade::if('laravelauth', function () {
-            return config('auth.type', 'laravel') === 'laravel';
+            return app(AuthenticationManager::class)->isLaravelAuth();
         });
 
         \Illuminate\Support\Facades\Blade::if('casavailable', function () {
-            return config('auth.type') === 'cas' &&
-                function_exists('cas') &&
-                config('cas.cas_hostname') &&
-                config('cas.cas_hostname') !== 'cas.myuniv.edu';
+            return app(AuthenticationManager::class)->isCasAvailable();
         });
     }
 }

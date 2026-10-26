@@ -2,16 +2,22 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\AuthenticationService;
-use App\Services\ImpersonationService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
+use Modules\Core\Application\Auth\AuthenticationManager;
+use Modules\Core\Application\Impersonation\ImpersonationManager;
 
 class AuthenticationTypeMiddleware
 {
+    public function __construct(
+        private readonly AuthenticationManager $authenticationManager,
+        private readonly ImpersonationManager $impersonationManager,
+    ) {
+    }
+
     /**
      * Handle an incoming request.
      */
@@ -49,7 +55,7 @@ class AuthenticationTypeMiddleware
     protected function handleCasAuthentication(Request $request, Closure $next)
     {
         try {
-            if (ImpersonationService::isImpersonating() && Auth::check()) {
+            if ($this->impersonationManager->isImpersonating() && Auth::check()) {
                 return $next($request);
             }
 
@@ -93,8 +99,10 @@ class AuthenticationTypeMiddleware
                         } else {
                             Log::warning("CAS user authenticated but not authorized locally", ['net_id' => $netId]);
 
-                            if (AuthenticationService::isCasAuth()) {
-                                return redirect()->route(AuthenticationService::getLoginRouteName())->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
+                            if ($this->authenticationManager->isCasAuth()) {
+                                return redirect()
+                                    ->route($this->authenticationManager->getLoginRouteName())
+                                    ->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
                             }
 
                             return redirect()->route('login')->with('error', 'You have successfully authenticated via CAS, but you do not have access to this application.');
@@ -118,7 +126,7 @@ class AuthenticationTypeMiddleware
             }
 
             // For protected routes, redirect to appropriate login
-            return redirect()->route(AuthenticationService::getLoginRouteName());
+            return redirect()->route($this->authenticationManager->getLoginRouteName());
 
         } catch (\Throwable $e) {
             Log::error('CAS authentication middleware error: ' . $e->getMessage());
