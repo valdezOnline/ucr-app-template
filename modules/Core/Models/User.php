@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -39,6 +40,9 @@ class User extends Authenticatable
         'is_manager',
         'is_supervisor',
         'is_active',
+        'last_login_at',
+        'last_logout_at',
+        'last_seen_at',
         'dashboard_application_order',
         'dashboard_shortcuts',
         'password',
@@ -63,6 +67,9 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'last_logout_at' => 'datetime',
+            'last_seen_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_manager' => 'boolean',
@@ -195,11 +202,37 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the user's activity log entries.
+     */
+    public function activities(): HasMany
+    {
+        return $this->hasMany(UserActivity::class)->orderByDesc('created_at');
+    }
+
+    /**
      * Scope to filter active users.
      */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Scope to filter users active within the recent window.
+     */
+    public function scopeOnline($query, int $minutes = 5)
+    {
+        return $query->whereNotNull('last_seen_at')
+            ->where('last_seen_at', '>=', now()->subMinutes($minutes));
+    }
+
+    /**
+     * Determine if this user has been seen recently.
+     */
+    public function isOnline(int $minutes = 5): bool
+    {
+        return $this->last_seen_at !== null
+            && $this->last_seen_at->greaterThanOrEqualTo(now()->subMinutes($minutes));
     }
 
     /**

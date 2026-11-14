@@ -15,6 +15,7 @@ use Modules\Core\Presentation\Http\Controllers\CasAuthController;
 use Modules\Core\Presentation\Http\Controllers\HomeController;
 use Modules\Core\Presentation\Http\Controllers\RoleController;
 use Modules\Core\Presentation\Http\Controllers\SiteStatusController;
+use Modules\Core\Presentation\Http\Controllers\UserActivityController;
 use Modules\Core\Presentation\Http\Controllers\UserController;
 use Modules\Core\Presentation\Http\Controllers\UserDashboardController;
 
@@ -46,6 +47,7 @@ Route::get('/password/confirm', [ConfirmPasswordController::class, 'showConfirmF
 Route::post('/password/confirm', [ConfirmPasswordController::class, 'confirm']);
 
 Route::get('/home', [HomeController::class, 'index'])->name('home')->middleware(['auth', 'auth.type']);
+Route::get('/activity/active-users', [UserActivityController::class, 'index'])->name('activity.active-users')->middleware(['auth', 'auth.type']);
 Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/applications/order', [UserDashboardController::class, 'saveApplicationOrder'])->name('dashboard.applications.order')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/shortcuts', [UserDashboardController::class, 'storeShortcut'])->name('dashboard.shortcuts.store')->middleware(['auth', 'auth.type']);

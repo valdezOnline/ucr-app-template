@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Modules\Core\Application\Auth\AuthenticationManager;
 use Modules\Core\Application\Impersonation\ImpersonationManager;
+use Modules\Core\Services\UserActivityTracker;
 
 class LoginController extends Controller
 {
@@ -35,6 +36,7 @@ class LoginController extends Controller
     public function __construct(
         private readonly AuthenticationManager $authenticationManager,
         private readonly ImpersonationManager $impersonationManager,
+        private readonly UserActivityTracker $userActivityTracker,
     )
     {
         $this->middleware('guest')->except('logout');
@@ -110,6 +112,11 @@ class LoginController extends Controller
 
                 return redirect()->route('login')->with('error', 'Unable to stop impersonation. Please sign in again.');
             }
+        }
+
+        $user = auth()->user();
+        if ($user) {
+            $this->userActivityTracker->recordLogout($user);
         }
 
         $this->guard()->logout();

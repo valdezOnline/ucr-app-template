@@ -31,10 +31,13 @@ class HomeController extends Controller
     {
         $user = auth()->user();
 
+        $onlineUsers = \Modules\Core\Models\User::online()->orderByDesc('last_seen_at')->get();
+
         $stats = [
             'total_users' => \Modules\Core\Models\User::count(),
             'active_users' => \Modules\Core\Models\User::where('is_active', true)->count(),
             'inactive_users' => \Modules\Core\Models\User::where('is_active', false)->count(),
+            'online_users' => $onlineUsers->count(),
             'admin_users' => \Modules\Core\Models\User::where('is_admin', true)->count(),
             'manager_users' => \Modules\Core\Models\User::where('is_manager', true)->count(),
             'supervisor_users' => \Modules\Core\Models\User::where('is_supervisor', true)->count(),
@@ -47,6 +50,6 @@ class HomeController extends Controller
         // Get applications user has access to
         $userApplications = \Modules\Core\Models\Application::visibleToUser($user)->get();
 
-        return view('home', compact('stats', 'userApplications'));
+        return view('home', compact('stats', 'userApplications', 'onlineUsers'));
     }
 }

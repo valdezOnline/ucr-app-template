@@ -5,7 +5,7 @@ This repository is a Laravel application that has been migrated to a module-firs
 ## 1) Project overview
 
 - Primary framework: Laravel 13
-- PHP requirement: ^8.2
+- PHP requirement: ^8.5
 - Frontend build: Vite + Laravel asset pipeline
 - App namespace: `Modules\...` for module code; root Laravel app is kept minimal
 - Core module: `modules/Core/` is the foundation for shared services, auth, models, middleware, and presentation code
@@ -122,6 +122,9 @@ A module should include the structure expected by the current project:
 - Prefer `php artisan test` for feature or unit validation.
 - For frontend changes, run the relevant Vite build or asset validation command when needed.
 - If a change alters a route, controller, auth flow, or module boundary, verify the corresponding behavior end-to-end or with focused tests.
+
+### Important Note:
+When running test or any command, please note that the application is running inside a docker container. See the docker compose in the root for details.
 
 ## 7) Documentation expectations
 

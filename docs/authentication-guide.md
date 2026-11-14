@@ -100,6 +100,20 @@ The application includes `AuthenticationTypeMiddleware` that:
 - Redirects unauthenticated users to the appropriate login method
 - Manages user session creation for CAS users
 
+The application also tracks user activity with `TrackUserActivity`, which refreshes authenticated users' `last_seen_at` timestamps (throttled to avoid per-request write amplification) and keeps the current online user list up to date.
+
+## User Activity Tracking
+
+The application records the following activity data for each authenticated user:
+
+- `login` when a user succeeds in logging in
+- `logout` when the user exits the application
+- `last_seen` when explicitly recorded as an activity event
+- `last_login_at`, `last_logout_at`, and `last_seen_at` timestamps on the `users` table
+- a `user_activities` audit log with the session ID, IP address, user agent, and metadata
+
+These values can be queried from the `users` table and `user_activities` table to build dashboards for current active users and recent sign-in history.
+
 ## Blade Directives
 
 Custom Blade directives are available for conditional rendering:

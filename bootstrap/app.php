@@ -17,10 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \Modules\Core\Presentation\Http\Middleware\SiteStatusMiddleware::class,
+            \Modules\Core\Presentation\Http\Middleware\TrackUserActivity::class,
         ]);
 
         $middleware->alias([
             'auth.type' => \Modules\Core\Presentation\Http\Middleware\AuthenticationTypeMiddleware::class,
+            'track.user.activity' => \Modules\Core\Presentation\Http\Middleware\TrackUserActivity::class,
             'api.app.auth' => \Modules\Core\Presentation\Http\Middleware\ApiApplicationAuth::class,
         ]);
     })

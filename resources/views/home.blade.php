@@ -62,6 +62,26 @@
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fs-4 fw-bold">{{ $stats['online_users'] }}</div>
+                                    <div>Online Now</div>
+                                </div>
+                                <div class="fs-1 opacity-75">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-info-dark">
+                            <span class="text-white text-decoration-none">
+                                Last activity in the last 5 minutes
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
                     <div class="card bg-danger text-white">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -104,6 +124,31 @@
                     </div>
                 </div>
             </div>
+
+            @if ($onlineUsers->isNotEmpty())
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Current Active Users</h5>
+                        <span class="badge bg-success">{{ $onlineUsers->count() }} online</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            @foreach ($onlineUsers as $onlineUser)
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ $onlineUser->full_name ?: $onlineUser->name }}</strong>
+                                        <div class="text-muted small">{{ $onlineUser->email }}</div>
+                                    </div>
+                                    <div class="text-end text-muted small">
+                                        <div>Last seen</div>
+                                        <div>{{ $onlineUser->last_seen_at?->diffForHumans() ?? 'Unknown' }}</div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <!-- System Management Statistics -->
             <div class="row mb-4">

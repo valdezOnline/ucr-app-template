@@ -10,12 +10,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Modules\Core\Application\Auth\AuthenticationManager;
 use Modules\Core\Application\Impersonation\ImpersonationManager;
+use Modules\Core\Services\UserActivityTracker;
 
 class CasAuthController extends Controller
 {
     public function __construct(
         private readonly AuthenticationManager $authenticationManager,
         private readonly ImpersonationManager $impersonationManager,
+        private readonly UserActivityTracker $userActivityTracker,
     ) {
     }
 
@@ -158,12 +160,21 @@ class CasAuthController extends Controller
             }
         }
 
+        $user = auth()->user();
+
         if (!$this->authenticationManager->isCasAuth()) {
+            if ($user) {
+                $this->userActivityTracker->recordLogout($user);
+            }
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
             return redirect('/')->with('success', 'You have been logged out successfully.');
+        }
+
+        if ($user) {
+            $this->userActivityTracker->recordLogout($user);
         }
 
         Auth::logout();
