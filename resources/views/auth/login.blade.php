@@ -113,16 +113,6 @@
                                     </div>
                                 </div>
                             </form>
-
-                            @if (Route::has('register'))
-                                <hr class="my-4">
-                                <div class="text-center">
-                                    <p class="mb-2">Don't have an account?</p>
-                                    <a href="{{ route('register') }}" class="btn btn-outline-secondary">
-                                        {{ __('Register') }}
-                                    </a>
-                                </div>
-                            @endif
                         @endif
                     </div>
                 </div>

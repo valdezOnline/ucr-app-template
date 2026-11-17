@@ -5,10 +5,10 @@ This Laravel application provides a comprehensive user management interface that
 ## Features
 
 ### User Management
-- **Create Users**: Add new users manually with all required information
+- **Create Users**: Add new users manually with all required information (admin/manager only)
 - **View Users**: Display detailed user information including roles and status
 - **Edit Users**: Update user information and roles
-- **Delete Users**: Remove users from the system (with safety checks)
+- **Delete Users**: Remove users from the system (admin only)
 - **Search & Filter**: Find users by name, Net ID, email, department, status, or role
 
 ### HR API Integration
@@ -98,11 +98,13 @@ Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus
 
 ## Usage Examples
 
-### Creating a User
+### Creating a User (Admin/Manager Only)
 1. Navigate to "Manage Users" → "Add New User"
 2. Fill in required information
 3. Set roles and permissions
 4. Save the user
+
+**Note:** Only administrators and managers can create new user accounts. Self-registration is not available.
 
 ### Importing from HR
 1. Click "Import from HR" button

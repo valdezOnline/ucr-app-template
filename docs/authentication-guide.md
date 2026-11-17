@@ -6,7 +6,7 @@ This application supports two primary web authentication methods and an external
 
 ### 1. Laravel Authentication (Default)
 - Traditional email/password authentication
-- User registration available
+- User account creation by admin/manager only (no self-registration)
 - Password reset functionality
 - Local user management
 
@@ -14,7 +14,7 @@ This application supports two primary web authentication methods and an external
 - Central Authentication Service integration
 - Single Sign-On capability
 - No local password management
-- User registration disabled (managed centrally)
+- User accounts managed centrally through CAS
 
 ### 3. External Broker Authentication (CAS + API)
 - External application initiates auth through this app
@@ -68,10 +68,10 @@ CAS_LOGOUT_REDIRECT=https://your-app-domain.com/
 
 ### Laravel Authentication Features
 - ✅ Login form with email/password
-- ✅ User registration
 - ✅ Password reset functionality
 - ✅ Remember me functionality
 - ✅ Local user management
+- ✅ User account creation by admin/manager only
 
 ### CAS Authentication Features
 - ✅ Single Sign-On (SSO)
@@ -86,12 +86,25 @@ CAS_LOGOUT_REDIRECT=https://your-app-domain.com/
 The application automatically adapts the UI based on the authentication type:
 
 ### Login Page
-- **Laravel Auth**: Shows email/password form with registration link
+- **Laravel Auth**: Shows email/password form (no registration link)
 - **CAS Auth**: Shows "Sign In with CAS" button
 
 ### Navigation
 - **Laravel Auth**: Standard logout form submission
 - **CAS Auth**: Direct link to CAS logout
+
+## User Account Creation
+
+User accounts can only be created by administrators or managers through the user management interface. This ensures controlled account provisioning and proper role assignment.
+
+To create a new user:
+1. Navigate to User Management
+2. Click "Add New User"
+3. Fill in user information
+4. Assign appropriate roles
+5. Save the user
+
+For more details, see the [User Management Guide](./user-management.md).
 
 ## Middleware
 
@@ -155,11 +168,12 @@ $casAvailable = $authenticationManager->isCasAvailable();
 $loginRouteName = $authenticationManager->getLoginRouteName();
 
 // Check feature availability
-$canRegister = $authenticationManager->registrationEnabled();
 $canResetPassword = $authenticationManager->passwordResetEnabled();
 ```
 
 Use `Modules\Core\Application\Auth\AuthenticationManager` via dependency injection as the canonical API for authentication mode behavior.
+
+**Note:** Registration is no longer available as a public feature. User accounts are created exclusively through the admin/manager user management interface.
 
 ## Admin Impersonation
 

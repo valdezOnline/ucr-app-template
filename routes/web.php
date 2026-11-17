@@ -7,7 +7,6 @@ use Modules\Core\Presentation\Http\Controllers\ApplicationController;
 use Modules\Core\Presentation\Http\Controllers\Auth\ConfirmPasswordController;
 use Modules\Core\Presentation\Http\Controllers\Auth\ForgotPasswordController;
 use Modules\Core\Presentation\Http\Controllers\Auth\LoginController;
-use Modules\Core\Presentation\Http\Controllers\Auth\RegisterController;
 use Modules\Core\Presentation\Http\Controllers\Auth\ResetPasswordController;
 use Modules\Core\Presentation\Http\Controllers\AuthConfigController;
 use Modules\Core\Presentation\Http\Controllers\AuthDebugController;
@@ -34,9 +33,6 @@ Route::get('/debug/switch-to-laravel', [AuthDebugController::class, 'switchToLar
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
-Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-Route::post('/register', [RegisterController::class, 'register']);
 
 Route::get('/password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
 Route::post('/password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
