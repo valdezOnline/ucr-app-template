@@ -8,6 +8,24 @@
 
     <title>{{ config('app.name', 'App Template') }} - @yield('title', 'App Template')</title>
 
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex: 1;
+        }
+
+        footer {
+            flex-shrink: 0;
+        }
+    </style>
 
     <!-- Styles -->
     @vite(['resources/sass/app.scss', 'resources/css/app.css', 'resources/css/custom.css', 'resources/js/app.js'])
@@ -15,9 +33,11 @@
 
 <body>
     <header>
-        <div class=" border-bottom">
-            @include('layouts.includes.top-nav')
-        </div>
+        @if (!auth()->check())
+            <div class=" border-bottom">
+                @include('layouts.includes.top-nav')
+            </div>
+        @endif
         <div class="">
             @include('layouts.includes.logo-section')
         </div>
@@ -86,7 +106,11 @@
     </main>
 
     <footer>
-        @include('layouts.includes.footer')
+        @if (auth()->check())
+            @include('layouts.includes.footer-nonav')
+        @else
+            @include('layouts.includes.footer')
+        @endif
     </footer>
 
     @yield('scripts')
