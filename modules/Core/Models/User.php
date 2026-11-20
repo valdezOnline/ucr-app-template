@@ -45,6 +45,9 @@ class User extends Authenticatable
         'last_seen_at',
         'dashboard_application_order',
         'dashboard_shortcuts',
+        'dashboard_display_mode',
+        'dashboard_groups',
+        'dashboard_application_groups',
         'password',
     ];
 
@@ -77,6 +80,8 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'dashboard_application_order' => 'array',
             'dashboard_shortcuts' => 'array',
+            'dashboard_groups' => 'array',
+            'dashboard_application_groups' => 'array',
         ];
     }
 

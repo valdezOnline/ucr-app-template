@@ -11,12 +11,13 @@ Use the repository-level guidance in [../AGENTS.md](../AGENTS.md) as the canonic
 
 ## Working expectations
 
+- Check docker container setup for the project.
 - Prefer `modules/Core` contracts and managers before creating new one-off services.
 - Keep route and middleware changes consistent with the existing `auth` and `auth.type` flow.
 - Update docs in `docs/` whenever behavior, setup, or route changes.
 - Validate that new code follows the module-first architecture principles.
 - Ensure that new code respects the boundaries between `Domain`, `Application`, `Infrastructure`, and `Presentation` layers.
-- Validate using the docker container setup for the project.
+- Validate using the docker container setup for the project. 
 - Validate with `php artisan test` or the smallest targeted command relevant to the change.
 
 ## Architecture notes

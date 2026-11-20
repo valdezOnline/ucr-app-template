@@ -152,4 +152,172 @@ class UserDashboardPersonalizationTest extends TestCase
         $this->assertCount(1, $remaining);
         $this->assertSame('abc-2', $remaining[0]['id']);
     }
+
+    public function test_user_can_update_display_mode(): void
+    {
+        $user = User::factory()->create(['dashboard_display_mode' => 'normal']);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.display-mode.update'), [
+                'display_mode' => 'small',
+            ], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Display mode updated successfully.',
+                'display_mode' => 'small',
+            ]);
+
+        $this->assertSame('small', $user->refresh()->dashboard_display_mode);
+    }
+
+    public function test_user_can_save_application_groups(): void
+    {
+        $user = User::factory()->create();
+        $role = Role::create([
+            'name' => 'staff',
+            'display_name' => 'Staff',
+            'is_active' => true,
+        ]);
+
+        $applications = collect([
+            Application::create(['name' => 'HR App', 'url' => 'https://hr.example.com', 'is_active' => true]),
+            Application::create(['name' => 'Dev App', 'url' => 'https://dev.example.com', 'is_active' => true]),
+            Application::create(['name' => 'Finance App', 'url' => 'https://finance.example.com', 'is_active' => true]),
+        ]);
+
+        $user->roles()->attach($role->id);
+        $role->applications()->attach($applications->pluck('id')->all());
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.applications.groups.save'), [
+                'groups' => [
+                    [
+                        'id' => 'group-1',
+                        'name' => 'HR Tools',
+                        'application_ids' => [$applications[0]->id],
+                    ],
+                    [
+                        'id' => 'group-2',
+                        'name' => 'Development',
+                        'application_ids' => [$applications[1]->id],
+                    ],
+                ],
+            ], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Application groups saved successfully.',
+            ]);
+
+        $groups = $user->refresh()->dashboard_groups;
+        $this->assertCount(2, $groups);
+        $this->assertSame('HR Tools', $groups[0]['name']);
+        $this->assertSame('Development', $groups[1]['name']);
+    }
+
+    public function test_user_can_delete_all_application_groups(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_groups' => [
+                ['id' => 'group-1', 'name' => 'Work Tools', 'application_ids' => [1]],
+            ],
+        ]);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.applications.groups.save'), [
+                'groups' => [],
+            ], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk();
+
+        $this->assertSame([], $user->refresh()->dashboard_groups);
+    }
+
+    public function test_user_cannot_save_groups_with_inaccessible_applications(): void
+    {
+        $user = User::factory()->create();
+        $role = Role::create([
+            'name' => 'staff',
+            'display_name' => 'Staff',
+            'is_active' => true,
+        ]);
+
+        $visibleApp = Application::create(['name' => 'Visible', 'url' => 'https://visible.example.com', 'is_active' => true]);
+        $hiddenApp = Application::create(['name' => 'Hidden', 'url' => 'https://hidden.example.com', 'is_active' => true]);
+
+        $user->roles()->attach($role->id);
+        $role->applications()->attach($visibleApp->id);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.applications.groups.save'), [
+                'groups' => [
+                    [
+                        'id' => 'group-1',
+                        'name' => 'All Apps',
+                        'application_ids' => [$visibleApp->id, $hiddenApp->id],
+                    ],
+                ],
+            ], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertStatus(422)
+            ->assertJson([
+                'message' => 'One or more applications are not available for your account.',
+            ]);
+    }
+
+    public function test_user_can_delete_application_group(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_groups' => [
+                ['id' => 'group-1', 'name' => 'Group 1', 'application_ids' => [1, 2]],
+                ['id' => 'group-2', 'name' => 'Group 2', 'application_ids' => [3]],
+            ],
+        ]);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->deleteJson(route('dashboard.applications.groups.delete', 'group-1'), [], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Group deleted successfully.',
+            ]);
+
+        $groups = $user->refresh()->dashboard_groups;
+        $this->assertCount(1, $groups);
+        $this->assertSame('group-2', $groups[0]['id']);
+    }
+
+    public function test_dashboard_view_shows_display_mode_and_groups(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_display_mode' => 'small',
+            'dashboard_groups' => [
+                ['id' => 'group-1', 'name' => 'Work Tools', 'application_ids' => [1]],
+            ],
+        ]);
+        $role = Role::create([
+            'name' => 'staff',
+            'display_name' => 'Staff',
+            'is_active' => true,
+        ]);
+
+        $app = Application::create(['name' => 'Test App', 'url' => 'https://test.example.com', 'is_active' => true]);
+        $user->roles()->attach($role->id);
+        $role->applications()->attach($app->id);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertViewHas('displayMode', 'small');
+        $response->assertViewHas('userGroups');
+        $response->assertViewHas('groupedApplications');
+        $response->assertSee('applications-display-small');
+        $response->assertSee('application-tile-small');
+        $response->assertDontSee('application-tile-normal');
+        $response->assertSee('id="add-group-btn"', false);
+        $response->assertSee('id="save-groups-btn"', false);
+        $response->assertSee('groupsContainer.appendChild(groupCard)');
+    }
 }
+

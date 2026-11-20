@@ -21,56 +21,69 @@
             <div class="row">
                 <div class="col-md-8">
                     <div class="card h-100">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <h5 class="mb-0">
                                 <i class="fas fa-th-large me-2"></i>My Applications
                             </h5>
-                            <button type="button" id="save-application-order"
-                                class="btn btn-primary btn-sm d-none">
-                                <i class="fas fa-save me-1"></i>Save Order
-                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check display-mode-toggle" name="displayMode"
+                                        id="displayModeNormal" value="normal" {{ $displayMode === 'normal' ? 'checked' : '' }}
+                                        data-bs-toggle="tooltip" title="Normal Tile View">
+                                    <label class="btn btn-outline-secondary" for="displayModeNormal">
+                                        <i class="fas fa-th-large"></i>
+                                    </label>
+
+                                    <input type="radio" class="btn-check display-mode-toggle" name="displayMode"
+                                        id="displayModeSmall" value="small" {{ $displayMode === 'small' ? 'checked' : '' }}
+                                        data-bs-toggle="tooltip" title="Small Tile View">
+                                    <label class="btn btn-outline-secondary" for="displayModeSmall">
+                                        <i class="fas fa-th"></i>
+                                    </label>
+
+                                    <input type="radio" class="btn-check display-mode-toggle" name="displayMode"
+                                        id="displayModeText" value="text" {{ $displayMode === 'text' ? 'checked' : '' }}
+                                        data-bs-toggle="tooltip" title="Text Only View">
+                                    <label class="btn btn-outline-secondary" for="displayModeText">
+                                        <i class="fas fa-list"></i>
+                                    </label>
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal"
+                                    data-bs-target="#groupsModal">
+                                    <i class="fas fa-folder me-1"></i>Groups
+                                </button>
+                                <button type="button" id="save-application-order"
+                                    class="btn btn-primary btn-sm d-none">
+                                    <i class="fas fa-save me-1"></i>Save Order
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             @if ($userApplications->count() > 0)
-                                <p class="text-muted small mb-3">
-                                    Drag and drop your application tiles to reorder them.
-                                </p>
-
-                                <div class="row" id="application-grid">
-                                    @foreach ($userApplications as $application)
-                                        <div class="col-lg-4 col-md-6 mb-3 draggable-application"
-                                            data-application-id="{{ $application->id }}" draggable="true">
-                                            <div class="card application-tile h-100">
-                                                <div class="card-body text-center d-flex flex-column">
-                                                    <div class="drag-handle mb-2" aria-hidden="true">
-                                                        <i class="fas fa-grip-vertical text-muted"></i>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        @if ($application->logo)
-                                                            <img src="{{ $application->logo }}"
-                                                                alt="{{ $application->name }}"
-                                                                class="application-logo mb-2">
-                                                        @else
-                                                            <div class="application-icon mb-2">
-                                                                <i
-                                                                    class="{{ $application->icon ?? 'fas fa-cube' }} fa-3x text-primary"></i>
-                                                            </div>
-                                                        @endif
-                                                    </div>
-                                                    <h6 class="card-title mb-2">{{ $application->name }}</h6>
-                                                    <p class="card-text text-muted small flex-grow-1">
-                                                        {{ Str::limit($application->description, 80) }}
-                                                    </p>
-                                                    <div class="mt-auto">
-                                                        <a href="{{ $application->url }}" target="_blank"
-                                                            class="btn btn-primary btn-sm">
-                                                            <i class="fas fa-external-link-alt me-1"></i>Launch
-                                                        </a>
-                                                    </div>
+                                <div id="applications-container" class="applications-display-{{ $displayMode }}">
+                                    @if (!empty($groupedApplications) && count($groupedApplications) > 1)
+                                        @foreach ($groupedApplications as $groupId => $groupData)
+                                            <div class="application-group mb-4" data-group-id="{{ $groupId }}">
+                                                <h6 class="text-muted text-uppercase small mb-3">
+                                                    {{ $groupData['name'] ?? 'Applications' }}
+                                                </h6>
+                                                <div class="row application-grid" data-group-id="{{ $groupId }}">
+                                                    @foreach ($groupData['applications'] as $application)
+                                                        @include('application-tile', ['application' => $application, 'displayMode' => $displayMode])
+                                                    @endforeach
                                                 </div>
                                             </div>
+                                        @endforeach
+                                    @else
+                                        <p class="text-muted small mb-3">
+                                            Drag and drop your application tiles to reorder them.
+                                        </p>
+                                        <div class="row application-grid" id="application-grid">
+                                            @foreach ($userApplications as $application)
+                                                @include('application-tile', ['application' => $application, 'displayMode' => $displayMode])
+                                            @endforeach
                                         </div>
-                                    @endforeach
+                                    @endif
                                 </div>
                             @else
                                 <div class="text-center py-5">
@@ -159,6 +172,59 @@
             </div>
         </div>
     </div>
+
+    <!-- Application Groups Modal -->
+    <div class="modal fade" id="groupsModal" tabindex="-1" aria-labelledby="groupsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="groupsModalLabel">Manage Application Groups</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="groups-container">
+                        @foreach ($userGroups as $group)
+                            <div class="card mb-3 group-card" data-group-id="{{ $group['id'] }}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-2">{{ $group['name'] }}</h6>
+                                            <input type="text" class="form-control form-control-sm group-name-input" value="{{ $group['name'] }}" placeholder="Group name">
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-danger delete-group-btn" data-group-id="{{ $group['id'] }}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                    <label class="form-label small text-muted">Select applications for this group:</label>
+                                    <div class="group-applications-list" data-group-id="{{ $group['id'] }}">
+                                        @foreach ($userApplications as $app)
+                                            <div class="form-check">
+                                                <input class="form-check-input group-app-checkbox" type="checkbox" 
+                                                    id="group{{ $group['id'] }}_app{{ $app->id }}"
+                                                    data-app-id="{{ $app->id }}"
+                                                    {{ in_array($app->id, $group['application_ids'] ?? []) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="group{{ $group['id'] }}_app{{ $app->id }}">
+                                                    {{ $app->name }}
+                                                </label>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    <button type="button" class="btn btn-secondary w-100 mt-3" id="add-group-btn">
+                        <i class="fas fa-plus me-2"></i>Add New Group
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-groups-btn">Save Groups</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="shortcutModal" tabindex="-1" aria-labelledby="shortcutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -281,6 +347,50 @@
             line-height: 1;
         }
 
+        /* Display Mode Styles */
+        .applications-display-normal .col-lg-4 {
+            flex: 0 0 33.333%;
+        }
+
+        .applications-display-small .col-lg-4 {
+            flex: 0 0 20%;
+            min-width: 150px;
+        }
+
+        .applications-display-small .col-md-6 {
+            flex: 0 0 20%;
+        }
+
+        .applications-display-text .col-lg-4,
+        .applications-display-text .col-md-6 {
+            flex: 0 0 100%;
+        }
+
+        .application-tile-small {
+            padding: 0.5rem !important;
+        }
+
+        .application-tile-text {
+            border-top: 2px solid #0d6efd;
+        }
+
+        .application-tile-text:hover {
+            background-color: #f8f9fa;
+        }
+
+        .application-logo-small {
+            max-width: 40px;
+            max-height: 40px;
+            object-fit: contain;
+        }
+
+        .application-icon-small {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .shortcut-list-wrapper {
             overflow-y: auto;
         }
@@ -321,6 +431,170 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            
+            // Display Mode Toggle
+            const displayModeToggles = document.querySelectorAll('.display-mode-toggle');
+            displayModeToggles.forEach(toggle => {
+                toggle.addEventListener('change', async (e) => {
+                    const displayMode = e.target.value;
+                    
+                    try {
+                        const response = await fetch("{{ route('dashboard.display-mode.update') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({ display_mode: displayMode })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to update display mode');
+                        }
+
+                        // Reload the page to reflect the new display mode
+                        window.location.reload();
+                    } catch (error) {
+                        alert('Failed to save display preference. Please try again.');
+                        e.target.checked = false;
+                    }
+                });
+            });
+
+            // Groups Management
+            const addGroupBtn = document.getElementById('add-group-btn');
+            const saveGroupsBtn = document.getElementById('save-groups-btn');
+            const groupsContainer = document.getElementById('groups-container');
+            let newGroupCounter = 0;
+
+            if (addGroupBtn) {
+                addGroupBtn.addEventListener('click', () => {
+                    newGroupCounter += 1;
+                    const groupId = `group-${Date.now()}-${newGroupCounter}`;
+                    const groupCard = document.createElement('div');
+                    groupCard.className = 'card mb-3 group-card';
+                    groupCard.dataset.groupId = groupId;
+                    groupCard.innerHTML = `
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-2">New Group</h6>
+                                    <input type="text" class="form-control form-control-sm group-name-input" value="New Group" placeholder="Group name">
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger delete-group-btn" data-group-id="${groupId}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <label class="form-label small text-muted">Select applications for this group:</label>
+                            <div class="group-applications-list" data-group-id="${groupId}">
+                                @foreach ($userApplications as $app)
+                                    <div class="form-check">
+                                        <input class="form-check-input group-app-checkbox" type="checkbox" 
+                                            id="${groupId}_app{{ $app->id }}"
+                                            data-app-id="{{ $app->id }}">
+                                        <label class="form-check-label" for="${groupId}_app{{ $app->id }}">
+                                            {{ $app->name }}
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    `;
+                    
+                    groupsContainer.appendChild(groupCard);
+                    attachGroupCardEventListeners(groupCard);
+                });
+            }
+
+            const attachGroupCardEventListeners = (groupCard) => {
+                const deleteBtn = groupCard.querySelector('.delete-group-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', () => {
+                        groupCard.remove();
+                    });
+                }
+            };
+
+            // Attach event listeners to existing group cards
+            document.querySelectorAll('.group-card').forEach(card => {
+                attachGroupCardEventListeners(card);
+            });
+
+            if (saveGroupsBtn) {
+                saveGroupsBtn.addEventListener('click', async () => {
+                    const groups = [];
+                    let validationError = '';
+
+                    document.querySelectorAll('.group-card').forEach(card => {
+                        const groupId = card.dataset.groupId;
+                        const nameInput = card.querySelector('.group-name-input');
+                        const groupName = nameInput?.value.trim() ?? '';
+                        const applicationIds = Array.from(
+                            card.querySelectorAll('.group-app-checkbox:checked')
+                        ).map(checkbox => parseInt(checkbox.dataset.appId, 10));
+
+                        if (!groupName) {
+                            validationError = 'Enter a name for every application group.';
+                            nameInput?.classList.add('is-invalid');
+                            return;
+                        }
+
+                        if (applicationIds.length === 0) {
+                            validationError = 'Select at least one application for each group.';
+                            card.classList.add('border-danger');
+                            return;
+                        }
+
+                        nameInput?.classList.remove('is-invalid');
+                        card.classList.remove('border-danger');
+                        groups.push({
+                            id: groupId,
+                            name: groupName,
+                            application_ids: applicationIds
+                        });
+                    });
+
+                    if (validationError) {
+                        alert(validationError);
+                        return;
+                    }
+
+                    saveGroupsBtn.disabled = true;
+
+                    try {
+                        const response = await fetch("{{ route('dashboard.applications.groups.save') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({ groups })
+                        });
+
+                        const result = await response.json().catch(() => null);
+
+                        if (!response.ok) {
+                            throw new Error(result?.message || 'Failed to save groups.');
+                        }
+
+                        const bootstrap = window.bootstrap;
+                        if (bootstrap?.Modal) {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('groupsModal'));
+                            if (modal) modal.hide();
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        alert(error instanceof Error ? error.message : 'Failed to save groups. Please try again.');
+                    } finally {
+                        saveGroupsBtn.disabled = false;
+                    }
+                });
+            }
+
             const shortcutForm = document.getElementById('shortcutForm');
             const shortcutMethodInput = document.getElementById('shortcutMethod');
             const shortcutModalLabel = document.getElementById('shortcutModalLabel');
@@ -394,7 +668,6 @@
 
             const applicationGrid = document.getElementById('application-grid');
             const saveOrderButton = document.getElementById('save-application-order');
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
             if (!applicationGrid || !saveOrderButton || !csrfToken) {
                 return;

@@ -42,6 +42,12 @@ class UserDashboardController extends Controller
             $user->dashboard_application_order ?? []
         );
 
+        // Group applications if user has groups set up
+        $groupedApplications = $this->groupApplicationsByUserGroups($userApplications, $user);
+
+        $displayMode = $user->dashboard_display_mode ?? 'normal';
+        $userGroups = $user->dashboard_groups ?? [];
+
         $shortcuts = collect($user->dashboard_shortcuts ?? [])
             ->filter(fn(array $shortcut) => isset($shortcut['id'], $shortcut['name'], $shortcut['url'], $shortcut['type']))
             ->map(function (array $shortcut) {
@@ -80,7 +86,14 @@ class UserDashboardController extends Controller
                 return [$displayCategory => $items];
             });
 
-        return view('user-dashboard', compact('userApplications', 'shortcutsByCategory', 'shortcutCategories'));
+        return view('user-dashboard', compact(
+            'userApplications',
+            'groupedApplications',
+            'displayMode',
+            'userGroups',
+            'shortcutsByCategory',
+            'shortcutCategories'
+        ));
     }
 
     /**
@@ -197,30 +210,127 @@ class UserDashboardController extends Controller
     }
 
     /**
-     * Remove a dashboard shortcut for the authenticated user.
+     * Update the user's dashboard display mode preference.
      */
-    public function destroyShortcut(Request $request, string $shortcutId): RedirectResponse
+    public function updateDisplayMode(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'display_mode' => ['required', Rule::in(['normal', 'small', 'text'])],
+        ]);
+
         $user = $request->user();
-        $shortcuts = collect($user->dashboard_shortcuts ?? []);
-
-        $shortcutExists = $shortcuts->contains(
-            fn(array $shortcut) => ($shortcut['id'] ?? null) === $shortcutId
-        );
-
-        if (!$shortcutExists) {
-            return back()->withErrors([
-                'shortcut' => 'Shortcut not found.',
-            ]);
-        }
-
-        $user->dashboard_shortcuts = $shortcuts
-            ->reject(fn(array $shortcut) => ($shortcut['id'] ?? null) === $shortcutId)
-            ->values()
-            ->all();
+        $user->dashboard_display_mode = $validated['display_mode'];
         $user->save();
 
-        return back()->with('success', 'Shortcut removed from My Shortcuts.');
+        return response()->json([
+            'message' => 'Display mode updated successfully.',
+            'display_mode' => $validated['display_mode'],
+        ]);
+    }
+
+    /**
+     * Create or update application groups for the user.
+     */
+    public function saveApplicationGroups(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'groups' => ['present', 'array'],
+            'groups.*.id' => ['required', 'string', 'distinct'],
+            'groups.*.name' => ['required', 'string', 'max:100'],
+            'groups.*.application_ids' => ['present', 'array'],
+            'groups.*.application_ids.*' => ['integer'],
+        ]);
+
+        $user = $request->user();
+        $visibleApplicationIds = Application::visibleToUser($user)
+            ->active()
+            ->pluck('id')
+            ->all();
+
+        // Validate all application IDs belong to the user
+        $allGroupApplicationIds = collect($validated['groups'])
+            ->pluck('application_ids')
+            ->flatten()
+            ->unique()
+            ->all();
+
+        $invalidIds = array_diff($allGroupApplicationIds, $visibleApplicationIds);
+        if (!empty($invalidIds)) {
+            return response()->json([
+                'message' => 'One or more applications are not available for your account.',
+            ], 422);
+        }
+
+        // Store groups configuration
+        $user->dashboard_groups = $validated['groups'];
+        $user->save();
+
+        return response()->json([
+            'message' => 'Application groups saved successfully.',
+        ]);
+    }
+
+    /**
+     * Delete an application group.
+     */
+    public function deleteApplicationGroup(Request $request, string $groupId): JsonResponse
+    {
+        $user = $request->user();
+        $groups = collect($user->dashboard_groups ?? []);
+
+        $groups = $groups->reject(fn(array $group) => ($group['id'] ?? null) === $groupId);
+
+        $user->dashboard_groups = $groups->values()->all();
+        $user->save();
+
+        return response()->json([
+            'message' => 'Group deleted successfully.',
+        ]);
+    }
+
+    /**
+     * Normalize and validate shortcut payload before saving.
+     *
+     * @param  array{name: string, type: string, url: string, category?: string|null}  $payload
+     * @return array{name: string, type: string, url: string, category: string|null}
+     */
+    private function groupApplicationsByUserGroups(Collection $applications, \Modules\Core\Models\User $user): array
+    {
+        $userGroups = $user->dashboard_groups ?? [];
+
+        if (empty($userGroups)) {
+            return ['ungrouped' => $applications];
+        }
+
+        $grouped = [];
+        $groupedAppIds = [];
+
+        foreach ($userGroups as $group) {
+            $groupId = $group['id'] ?? null;
+            $groupName = $group['name'] ?? 'Unnamed Group';
+            $applicationIds = $group['application_ids'] ?? [];
+
+            $groupedAppIds = array_merge($groupedAppIds, $applicationIds);
+            $grouped[$groupId] = [
+                'name' => $groupName,
+                'applications' => $applications->filter(
+                    fn($app) => in_array($app->id, $applicationIds)
+                )->values(),
+            ];
+        }
+
+        $ungroupedApps = $applications->filter(
+            fn($app) => !in_array($app->id, $groupedAppIds)
+        )->values();
+
+        if ($ungroupedApps->isNotEmpty()) {
+            $grouped['ungrouped'] = [
+                'name' => 'Ungrouped',
+                'applications' => $ungroupedApps,
+            ];
+        }
+
+        return $grouped;
     }
 
     /**
