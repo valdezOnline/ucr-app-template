@@ -78,6 +78,7 @@ composer run setup
 ### After changes
 
 - Update documentation when behavior, routes, environment variables, or architecture changes.
+- All documentations should be created inside the `docs` or `docs/<ModuleName>` or `docs/<FeatureName>` or `docs/<NewFeatureName>` folder.
 - Keep examples consistent with the current module-first architecture (`Modules\...`).
 - Validate with the smallest relevant command that checks the behavior.
 - Avoid touching generated files, vendor code, lockfiles, or unrelated legacy code unless the task requires it.
@@ -119,7 +120,7 @@ A module should include the structure expected by the current project:
 ## 6) Testing and validation standards
 
 - Run the smallest relevant test suite for the changed behavior.
-- Prefer `php artisan test` for feature or unit validation.
+- Prefer `php artisan test` for feature or unit validation. (Note: check co
 - For frontend changes, run the relevant Vite build or asset validation command when needed.
 - If a change alters a route, controller, auth flow, or module boundary, verify the corresponding behavior end-to-end or with focused tests.
 

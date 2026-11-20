@@ -14,7 +14,7 @@ Use the repository-level guidance in [../AGENTS.md](../AGENTS.md) as the canonic
 - Check docker container setup for the project.
 - Prefer `modules/Core` contracts and managers before creating new one-off services.
 - Keep route and middleware changes consistent with the existing `auth` and `auth.type` flow.
-- Update docs in `docs/` whenever behavior, setup, or route changes.
+- Update docs in `docs/` or `docs/<ModuleName>` or `docs/<FeatureName>` whenever behavior, setup, new features, or route changes.
 - Validate that new code follows the module-first architecture principles.
 - Ensure that new code respects the boundaries between `Domain`, `Application`, `Infrastructure`, and `Presentation` layers.
 - Validate using the docker container setup for the project. 
@@ -42,6 +42,23 @@ Language Specific rules are in `.github/instructions/`:
 - Every finding states what is wrong, why it matters, and a concrete fix.
 - Group repeated issues into one comment. Max 3 nits; none if blockers exist.
 - Always provide context for your comments, linking to relevant code, documentation, or standards when applicable.
+- Before reviewing or suggesting changes, ensure you understand the existing module-first architecture and how the new code fits within it.
+- Always consider how new code interacts with existing modules and shared components.
+- Ensure that new features, such as user dashboard personalization, are integrated consistently with the module-first architecture.
+- Before suggesting commands, inspect: 
+  - README files
+  - docker-compose files
+  - Makefiles
+  - package.json scripts
+  - composer.json scripts
+  - CI/CD workflow files
+  - documentation under docs/
+  - development container configurations
+  - Assume developers may be using different operating systems, shells, and local tooling versions.
+  - Never assume a dependency is installed locally if Docker is available.
+  - Check for any project-specific configuration files that may affect the development environment.
+  - Verify that any environment variables required for local development are properly documented and configured.
+
 
 ## Severity
 - 🔴 Blocker: security hole, data loss, broken behavior, unsafe migration
@@ -59,6 +76,8 @@ Language Specific rules are in `.github/instructions/`:
 - Ensure that error handling and edge cases are properly addressed in the new code.
 - Confirm that new code follows established coding standards and conventions.
 - Ensure that new code adheres to established module logging mechanisms and practices.
+- Confirm that new code correctly handles user dashboard personalization features, including shortcuts, display modes, and application groups.
+- Document any changes or new features added to the application inside the root docs folder creating a new sub-folder to match its corresponding module changes or feature changes and ensure they are accurately reflected.
 
 ## Do not
 
