@@ -319,5 +319,51 @@ class UserDashboardPersonalizationTest extends TestCase
         $response->assertSee('id="save-groups-btn"', false);
         $response->assertSee('groupsContainer.appendChild(groupCard)');
     }
+
+    public function test_user_can_toggle_dashboard_lock(): void
+    {
+        $user = User::factory()->create(['dashboard_locked' => false]);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.lock.toggle'), [], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Dashboard locked.',
+                'locked' => true,
+            ]);
+
+        $user->refresh();
+        $this->assertTrue($user->dashboard_locked);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.lock.toggle'), [], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Dashboard unlocked.',
+                'locked' => false,
+            ]);
+
+        $user->refresh();
+        $this->assertFalse($user->dashboard_locked);
+    }
+
+    public function test_dashboard_lock_persists_across_sessions(): void
+    {
+        $user = User::factory()->create(['dashboard_locked' => false]);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.lock.toggle'), [], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk();
+
+        $user->refresh();
+        $this->assertTrue($user->dashboard_locked);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+        $response->assertOk();
+        $response->assertSee('let isDashboardLocked = true;', false);
+    }
 }
 

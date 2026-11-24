@@ -146,6 +146,21 @@ class UserDashboardController extends Controller
     }
 
     /**
+     * Toggle the dashboard lock state.
+     */
+    public function toggleDashboardLock(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $user->dashboard_locked = !$user->dashboard_locked;
+        $user->save();
+
+        return response()->json([
+            'message' => $user->dashboard_locked ? 'Dashboard locked.' : 'Dashboard unlocked.',
+            'locked' => $user->dashboard_locked,
+        ]);
+    }
+
+    /**
      * Save a dashboard shortcut for the authenticated user.
      */
     public function storeShortcut(Request $request): RedirectResponse
@@ -157,7 +172,14 @@ class UserDashboardController extends Controller
             'category' => ['nullable', 'string', 'max:80'],
         ]);
 
-        $normalizedShortcut = $this->normalizeShortcutPayload($validated);
+        try {
+            $normalizedShortcut = $this->normalizeShortcutPayload($validated);
+        } catch (\InvalidArgumentException $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['url' => $e->getMessage()]);
+        }
+
         $user = $request->user();
         $shortcuts = collect($user->dashboard_shortcuts ?? []);
         $shortcuts->push([
@@ -186,7 +208,14 @@ class UserDashboardController extends Controller
             'category' => ['nullable', 'string', 'max:80'],
         ]);
 
-        $normalizedShortcut = $this->normalizeShortcutPayload($validated);
+        try {
+            $normalizedShortcut = $this->normalizeShortcutPayload($validated);
+        } catch (\InvalidArgumentException $e) {
+            return back()
+                ->withInput()
+                ->withErrors(['url' => $e->getMessage()]);
+        }
+
         $user = $request->user();
         $shortcuts = collect($user->dashboard_shortcuts ?? []);
 

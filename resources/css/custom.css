@@ -607,3 +607,29 @@ footer ul.site-legal-footer li a:hover {
     min-height: 100px;
   }
 }
+
+/* Dashboard Lock Styles */
+.dashboard-locked .draggable-application {
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.dashboard-locked .draggable-application:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+#toggle-dashboard-lock {
+  transition: all 0.2s ease-in-out;
+}
+
+#toggle-dashboard-lock.locked-state {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+#toggle-dashboard-lock.locked-state:hover {
+  background-color: #c82333;
+  border-color: #c82333;
+}

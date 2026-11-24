@@ -48,6 +48,12 @@
                                         <i class="fas fa-list"></i>
                                     </label>
                                 </div>
+                                <button type="button" id="toggle-dashboard-lock"
+                                    class="btn btn-secondary btn-sm"
+                                    data-bs-toggle="tooltip"
+                                    title="{{ auth()->user()->dashboard_locked ? 'Unlock dashboard to edit' : 'Lock dashboard to prevent accidental changes' }}">
+                                    <i class="fas {{ auth()->user()->dashboard_locked ? 'fa-lock' : 'fa-unlock' }} me-1"></i><span class="lock-status-text">{{ auth()->user()->dashboard_locked ? 'Locked' : 'Unlocked' }}</span>
+                                </button>
                                 <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal"
                                     data-bs-target="#groupsModal">
                                     <i class="fas fa-folder me-1"></i>Groups
@@ -595,6 +601,7 @@
                 });
             }
 
+
             const shortcutForm = document.getElementById('shortcutForm');
             const shortcutMethodInput = document.getElementById('shortcutMethod');
             const shortcutModalLabel = document.getElementById('shortcutModalLabel');
@@ -606,6 +613,19 @@
             const shortcutUrlInput = document.getElementById('shortcut-url');
             const shortcutCategoryInput = document.getElementById('shortcut-category');
             const createShortcutButton = document.querySelector('[data-bs-target="#shortcutModal"]');
+
+            // Auto-prefix external URLs with https:// if missing
+            if (shortcutForm) {
+                shortcutForm.addEventListener('submit', function(e) {
+                    if (shortcutTypeInput && shortcutUrlInput && shortcutTypeInput.value === 'external') {
+                        let url = shortcutUrlInput.value.trim();
+                        if (url && !/^https?:\/\//i.test(url)) {
+                            url = 'https://' + url.replace(/^\/+/, '');
+                            shortcutUrlInput.value = url;
+                        }
+                    }
+                });
+            }
 
             const setCreateMode = () => {
                 if (!shortcutForm || !shortcutMethodInput) {
@@ -668,6 +688,7 @@
 
             const applicationGrid = document.getElementById('application-grid');
             const saveOrderButton = document.getElementById('save-application-order');
+            const toggleLockButton = document.getElementById('toggle-dashboard-lock');
 
             if (!applicationGrid || !saveOrderButton || !csrfToken) {
                 return;
@@ -675,6 +696,7 @@
 
             let draggedElement = null;
             let hasOrderChanges = false;
+            let isDashboardLocked = {{ json_encode(auth()->user()->dashboard_locked) }};
 
             const markOrderChanged = () => {
                 if (!hasOrderChanges) {
@@ -683,9 +705,58 @@
                 }
             };
 
+            const updateLockUI = () => {
+                const icon = toggleLockButton.querySelector('i');
+                const text = toggleLockButton.querySelector('.lock-status-text');
+                if (isDashboardLocked) {
+                    icon.classList.remove('fa-unlock');
+                    icon.classList.add('fa-lock');
+                    text.textContent = 'Locked';
+                    toggleLockButton.title = 'Unlock dashboard to edit';
+                } else {
+                    icon.classList.remove('fa-lock');
+                    icon.classList.add('fa-unlock');
+                    text.textContent = 'Unlocked';
+                    toggleLockButton.title = 'Lock dashboard to prevent accidental changes';
+                }
+            };
+
+            if (toggleLockButton) {
+                toggleLockButton.addEventListener('click', async () => {
+                    toggleLockButton.disabled = true;
+
+                    try {
+                        const response = await fetch("{{ route('dashboard.lock.toggle') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Unable to toggle dashboard lock');
+                        }
+
+                        const data = await response.json();
+                        isDashboardLocked = data.locked;
+                        updateLockUI();
+                    } catch (error) {
+                        alert('Unable to toggle dashboard lock. Please try again.');
+                    } finally {
+                        toggleLockButton.disabled = false;
+                    }
+                });
+            }
+
             const draggableItems = applicationGrid.querySelectorAll('.draggable-application');
             draggableItems.forEach((item) => {
                 item.addEventListener('dragstart', (event) => {
+                    if (isDashboardLocked) {
+                        event.preventDefault();
+                        return;
+                    }
                     draggedElement = item;
                     item.classList.add('dragging');
                     event.dataTransfer.effectAllowed = 'move';
@@ -698,6 +769,9 @@
             });
 
             applicationGrid.addEventListener('dragover', (event) => {
+                if (isDashboardLocked) {
+                    return;
+                }
                 event.preventDefault();
                 if (!draggedElement) {
                     return;

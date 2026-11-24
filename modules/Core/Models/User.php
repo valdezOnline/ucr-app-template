@@ -48,6 +48,7 @@ class User extends Authenticatable
         'dashboard_display_mode',
         'dashboard_groups',
         'dashboard_application_groups',
+        'dashboard_locked',
         'password',
     ];
 
@@ -78,6 +79,7 @@ class User extends Authenticatable
             'is_manager' => 'boolean',
             'is_supervisor' => 'boolean',
             'is_active' => 'boolean',
+            'dashboard_locked' => 'boolean',
             'dashboard_application_order' => 'array',
             'dashboard_shortcuts' => 'array',
             'dashboard_groups' => 'array',
