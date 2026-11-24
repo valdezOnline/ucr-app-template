@@ -123,35 +123,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            @if ($onlineUsers->isNotEmpty())
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Current Active Users</h5>
-                        <span class="badge bg-success">{{ $onlineUsers->count() }} online</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="list-group list-group-flush">
-                            @foreach ($onlineUsers as $onlineUser)
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong>{{ $onlineUser->full_name ?: $onlineUser->name }}</strong>
-                                        <div class="text-muted small">{{ $onlineUser->email }}</div>
-                                    </div>
-                                    <div class="text-end text-muted small">
-                                        <div>Last seen</div>
-                                        <div>{{ $onlineUser->last_seen_at?->diffForHumans() ?? 'Unknown' }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- System Management Statistics -->
-            <div class="row mb-4">
                 <div class="col-lg-3 col-md-6 mb-3">
                     <div class="card bg-info text-white">
                         <div class="card-body">
@@ -289,39 +260,30 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">
-                                <i class="fas fa-info-circle me-2"></i>Your Profile
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="text-center mb-3">
-                                <div
-                                    class="avatar-lg bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center">
-                                    {{ strtoupper(substr(auth()->user()->first_name, 0, 1) . substr(auth()->user()->last_name, 0, 1)) }}
-                                </div>
-                            </div>
-                            <div class="text-center">
-                                <h6 class="mb-1">{{ auth()->user()->full_name }}</h6>
-                                <p class="text-muted mb-2">{{ auth()->user()->title ?: 'Staff Member' }}</p>
-                                <p class="text-muted mb-3">{{ auth()->user()->department ?: 'No Department' }}</p>
-
-                                @if (count(auth()->user()->getRoles()) > 0)
-                                    <div class="mb-3">
-                                        @foreach (auth()->user()->getRoles() as $role)
-                                            <span class="badge bg-secondary me-1">{{ $role }}</span>
-                                        @endforeach
+                    @if ($onlineUsers->isNotEmpty())
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Current Active Users</h5>
+                        <span class="badge bg-success">{{ $onlineUsers->count() }} online</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group list-group-flush">
+                            @foreach ($onlineUsers as $onlineUser)
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ $onlineUser->full_name ?: $onlineUser->name }}</strong>
+                                        <div class="text-muted small">{{ $onlineUser->email }}</div>
                                     </div>
-                                @endif
-
-                                <a href="{{ route('users.show', auth()->user()) }}"
-                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye me-1"></i>View Profile
-                                </a>
-                            </div>
+                                    <div class="text-end text-muted small">
+                                        <div>Last seen</div>
+                                        <div>{{ $onlineUser->last_seen_at?->diffForHumans() ?? 'Unknown' }}</div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
+                </div>
+            @endif                        
                 </div>
             </div>
         </div>
