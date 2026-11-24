@@ -15,12 +15,10 @@ class AdminImpersonationTest extends TestCase
     {
         config()->set('auth.type', 'laravel');
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
         $target = User::factory()->create([
-            'is_admin' => false,
             'is_active' => true,
         ]);
 
@@ -54,12 +52,10 @@ class AdminImpersonationTest extends TestCase
     {
         config()->set('auth.type', 'laravel');
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
-        $otherAdmin = User::factory()->create([
-            'is_admin' => true,
+        $otherAdmin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -78,12 +74,10 @@ class AdminImpersonationTest extends TestCase
     {
         config()->set('auth.type', 'laravel');
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
         $target = User::factory()->create([
-            'is_admin' => false,
             'is_active' => true,
         ]);
 
@@ -109,14 +103,12 @@ class AdminImpersonationTest extends TestCase
     {
         config()->set('auth.type', 'cas');
 
-        $admin = User::factory()->create([
+        $admin = User::factory()->admin()->create([
             'net_id' => 'cas-admin',
-            'is_admin' => true,
             'is_active' => true,
         ]);
         $target = User::factory()->create([
             'net_id' => 'cas-target',
-            'is_admin' => false,
             'is_active' => true,
         ]);
 

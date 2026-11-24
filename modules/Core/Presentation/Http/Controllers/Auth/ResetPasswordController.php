@@ -35,7 +35,7 @@ class ResetPasswordController extends Controller
     {
         $user = auth()->user();
 
-        if ($user && ($user->hasRole('admin') || $user->is_admin)) {
+        if ($user && $user->isAdmin()) {
             return '/home'; // Admin dashboard
         }
 

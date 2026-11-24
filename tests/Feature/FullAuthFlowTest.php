@@ -14,9 +14,8 @@ class FullAuthFlowTest extends TestCase
     {
         config()->set('auth.type', 'cas');
 
-        $admin = User::factory()->create([
+        $admin = User::factory()->admin()->create([
             'net_id' => 'cas-admin',
-            'is_admin' => true,
             'is_active' => true,
         ]);
 

@@ -153,74 +153,21 @@
                                 <h6 class="mb-0">Roles and Status</h6>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        @if (auth()->user()->hasRole('admin'))
-                                            <div class="mb-3">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="is_admin"
-                                                        name="is_admin" value="1"
-                                                        {{ old('is_admin', $user->is_admin) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="is_admin">
-                                                        <strong>Administrator</strong>
-                                                        <br><small class="text-muted">Full system access</small>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        @else
-                                            <!-- Hidden field to preserve current admin status for managers -->
-                                            @if ($user->is_admin)
-                                                <input type="hidden" name="is_admin" value="1">
-                                                <div class="mb-3">
-                                                    <div class="alert alert-info">
-                                                        <i class="fas fa-info-circle me-2"></i>
-                                                        <strong>Administrator:</strong> This user has administrator
-                                                        privileges. Only administrators can modify this setting.
-                                                    </div>
-                                                </div>
-                                            @endif
-                                        @endif
-                                        <div class="mb-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="is_manager"
-                                                    name="is_manager" value="1"
-                                                    {{ old('is_manager', $user->is_manager) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="is_manager">
-                                                    <strong>Manager</strong>
-                                                    <br><small class="text-muted">Management privileges</small>
-                                                </label>
-                                            </div>
-                                        </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is_active"
+                                            name="is_active" value="1"
+                                            {{ old('is_active', $user->is_active) ? 'checked' : '' }}
+                                            {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                        <label class="form-check-label" for="is_active">
+                                            <strong>Active User</strong>
+                                            <br><small class="text-muted">User can access the system</small>
+                                        </label>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="is_supervisor"
-                                                    name="is_supervisor" value="1"
-                                                    {{ old('is_supervisor', $user->is_supervisor) ? 'checked' : '' }}>
-                                                <label class="form-check-label" for="is_supervisor">
-                                                    <strong>Supervisor</strong>
-                                                    <br><small class="text-muted">Supervisory access</small>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="mb-3">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="is_active"
-                                                    name="is_active" value="1"
-                                                    {{ old('is_active', $user->is_active) ? 'checked' : '' }}
-                                                    {{ $user->id === auth()->id() ? 'disabled' : '' }}>
-                                                <label class="form-check-label" for="is_active">
-                                                    <strong>Active User</strong>
-                                                    <br><small class="text-muted">User can access the system</small>
-                                                </label>
-                                            </div>
-                                            @if ($user->id === auth()->id())
-                                                <small class="text-muted">You cannot deactivate your own account.</small>
-                                                <input type="hidden" name="is_active" value="1">
-                                            @endif
-                                        </div>
-                                    </div>
+                                    @if ($user->id === auth()->id())
+                                        <small class="text-muted">You cannot deactivate your own account.</small>
+                                        <input type="hidden" name="is_active" value="1">
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -242,7 +189,8 @@
                                                     <input class="form-check-input" type="checkbox"
                                                         id="role_{{ $role->id }}" name="roles[]"
                                                         value="{{ $role->id }}"
-                                                        {{ in_array($role->id, old('roles', $user->roles->pluck('id')->toArray())) ? 'checked' : '' }}>
+                                                        {{ in_array($role->id, old('roles', $user->roles->pluck('id')->toArray())) ? 'checked' : '' }}
+                                                        {{ $role->name === 'admin' && !auth()->user()->isAdmin() ? 'disabled' : '' }}>
                                                     <label class="form-check-label" for="role_{{ $role->id }}">
                                                         <strong>{{ $role->display_name }}</strong>
                                                         @if ($role->level)

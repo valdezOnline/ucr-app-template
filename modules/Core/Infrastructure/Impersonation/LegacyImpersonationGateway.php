@@ -26,7 +26,7 @@ class LegacyImpersonationGateway implements ImpersonationGateway
             throw new RuntimeException('An impersonation session is already active.');
         }
 
-        if (!$impersonator->hasRole('admin') && !$impersonator->is_admin) {
+        if (!$impersonator->isAdmin()) {
             throw new RuntimeException('Only administrators can start impersonation.');
         }
 
@@ -38,7 +38,7 @@ class LegacyImpersonationGateway implements ImpersonationGateway
             throw new RuntimeException('You can only impersonate active users.');
         }
 
-        if ($targetUser->hasRole('admin') || $targetUser->is_admin) {
+        if ($targetUser->isAdmin()) {
             throw new RuntimeException('Administrators cannot impersonate other administrators.');
         }
 

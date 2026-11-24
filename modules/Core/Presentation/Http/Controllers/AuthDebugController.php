@@ -24,7 +24,9 @@ class AuthDebugController extends Controller
             'auth_type' => $this->authenticationManager->getType(),
             'cas_masquerade' => config('cas.cas_masquerade'),
             'laravel_auth_check' => auth()->check(),
-            'laravel_user' => auth()->user() ? auth()->user()->only(['id', 'net_id', 'is_admin']) : null,
+            'laravel_user' => auth()->user()
+                ? ['id' => auth()->id(), 'net_id' => auth()->user()->net_id, 'is_admin' => auth()->user()->isAdmin()]
+                : null,
             'session_cas_user' => session('cas_user'),
             'routes_available' => [
                 'cas_login' => \Illuminate\Support\Facades\Route::has('cas.login'),

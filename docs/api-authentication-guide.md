@@ -227,7 +227,6 @@ Authenticates a user with their credentials and returns user information plus ac
         "net_id": "jdoe",
         "name": "John Doe",
         "email": "john.doe@example.com",
-        "is_admin": false,
         "roles": ["user", "editor"]
     },
     "token": "sanctum_token_here",
@@ -313,7 +312,6 @@ Retrieves detailed user information including roles and accessible applications.
         "net_id": "jdoe",
         "name": "John Doe", 
         "email": "john.doe@example.com",
-        "is_admin": false,
         "roles": [
             {
                 "id": 1,

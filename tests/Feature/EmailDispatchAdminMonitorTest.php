@@ -15,8 +15,7 @@ class EmailDispatchAdminMonitorTest extends TestCase
 
     public function test_admin_can_view_email_dispatch_monitor(): void
     {
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -51,7 +50,6 @@ class EmailDispatchAdminMonitorTest extends TestCase
     public function test_non_admin_cannot_view_email_dispatch_monitor(): void
     {
         $user = User::factory()->create([
-            'is_admin' => false,
             'is_active' => true,
         ]);
 
@@ -63,8 +61,7 @@ class EmailDispatchAdminMonitorTest extends TestCase
     {
         Queue::fake();
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -107,8 +104,7 @@ class EmailDispatchAdminMonitorTest extends TestCase
     {
         Queue::fake();
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 

@@ -24,9 +24,6 @@ class UserSeeder extends Seeder
             'title' => 'System Administrator',
             'supervisor_net_id' => null,
             'supervisor_name' => null,
-            'is_admin' => true,
-            'is_manager' => true,
-            'is_supervisor' => false,
             'is_active' => true,
             'password' => Hash::make('password123'),
             'email_verified_at' => now(),
@@ -43,9 +40,6 @@ class UserSeeder extends Seeder
             'title' => 'Library Manager',
             'supervisor_net_id' => 'admin',
             'supervisor_name' => 'Admin User',
-            'is_admin' => false,
-            'is_manager' => true,
-            'is_supervisor' => true,
             'is_active' => true,
             'password' => Hash::make('password123'),
             'email_verified_at' => now(),
@@ -62,9 +56,6 @@ class UserSeeder extends Seeder
             'title' => 'Library Assistant',
             'supervisor_net_id' => 'manager01',
             'supervisor_name' => 'Jane Manager',
-            'is_admin' => false,
-            'is_manager' => false,
-            'is_supervisor' => false,
             'is_active' => true,
             'password' => Hash::make('password123'),
             'email_verified_at' => now(),
@@ -81,9 +72,6 @@ class UserSeeder extends Seeder
             'title' => 'Former Position',
             'supervisor_net_id' => 'manager01',
             'supervisor_name' => 'Jane Manager',
-            'is_admin' => false,
-            'is_manager' => false,
-            'is_supervisor' => false,
             'is_active' => false,
             'password' => Hash::make('password123'),
             'email_verified_at' => now(),
@@ -100,12 +88,23 @@ class UserSeeder extends Seeder
             'title' => 'Senior Librarian',
             'supervisor_net_id' => 'manager01',
             'supervisor_name' => 'Jane Manager',
-            'is_admin' => false,
-            'is_manager' => false,
-            'is_supervisor' => true,
             'is_active' => true,
             'password' => Hash::make('password123'),
             'email_verified_at' => now(),
         ]);
+
+        // Assign system roles (the 'admin', 'manager', 'supervisor' roles are created by migration)
+        $systemRoles = [
+            'admin' => ['admin'],
+            'manager01' => ['manager', 'supervisor'],
+            'supervisor01' => ['supervisor'],
+        ];
+
+        foreach ($systemRoles as $netId => $roleNames) {
+            $user = User::firstWhere('net_id', $netId);
+            foreach ($roleNames as $roleName) {
+                $user?->assignRole($roleName);
+            }
+        }
     }
 }

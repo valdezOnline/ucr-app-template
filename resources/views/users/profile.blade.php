@@ -116,30 +116,6 @@
                                 </div>
 
                                 <div class="col-12">
-                                    @php
-                                        $legacyRoles = [];
-                                        if ($user->is_admin) {
-                                            $legacyRoles[] = 'Admin';
-                                        }
-                                        if ($user->is_manager) {
-                                            $legacyRoles[] = 'Manager';
-                                        }
-                                        if ($user->is_supervisor) {
-                                            $legacyRoles[] = 'Supervisor';
-                                        }
-                                    @endphp
-
-                                    @if (count($legacyRoles) > 0)
-                                        <div class="mb-3">
-                                            <label class="form-label fw-bold">System Roles</label>
-                                            <div>
-                                                @foreach ($legacyRoles as $role)
-                                                    <span class="badge bg-primary me-1 mb-1">{{ $role }}</span>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-
                                     @if ($user->roles->count() > 0)
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">Dynamic Roles</label>
@@ -151,7 +127,7 @@
                                         </div>
                                     @endif
 
-                                    @if (count($legacyRoles) === 0 && $user->roles->count() === 0)
+                                    @if ($user->roles->count() === 0)
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">Roles</label>
                                             <p class="form-control-plaintext text-muted">No roles assigned</p>
@@ -176,6 +152,15 @@
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Last Updated</label>
                                         <p class="form-control-plaintext">{{ $user->updated_at->format('M d, Y') }}</p>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Dashboard Width</label>
+                                        <p class="form-control-plaintext">
+                                            {{ $user->dashboard_full_width ? 'Full width' : 'Centered container' }}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

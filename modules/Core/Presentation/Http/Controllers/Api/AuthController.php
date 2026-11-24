@@ -383,7 +383,6 @@ class AuthController extends Controller
                     'net_id' => $user->net_id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'is_admin' => $user->is_admin,
                     'roles' => $user->roles->pluck('name')->toArray(),
                 ],
                 'token' => $token,
@@ -613,7 +612,6 @@ class AuthController extends Controller
                     'net_id' => $user->net_id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'is_admin' => $user->is_admin,
                     'roles' => $user->roles->map(function ($role) {
                         return [
                             'id' => $role->id,

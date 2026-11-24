@@ -16,7 +16,7 @@ class SiteStatusController extends Controller
         $this->middleware(['auth', 'auth.type'])->except('show');
         $this->middleware(function ($request, $next) {
             $user = auth()->user();
-            if (!$user || (!$user->hasRole('admin') && !$user->is_admin)) {
+            if (!$user || !$user->isAdmin()) {
                 abort(403, 'Access denied. Admin role required.');
             }
             return $next($request);

@@ -78,31 +78,7 @@
                                 </p>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Legacy Roles</label>
-                                <p class="form-control-plaintext">
-                                    @php
-                                        $legacyRoles = [];
-                                        if ($user->is_admin) {
-                                            $legacyRoles[] = 'Admin';
-                                        }
-                                        if ($user->is_manager) {
-                                            $legacyRoles[] = 'Manager';
-                                        }
-                                        if ($user->is_supervisor) {
-                                            $legacyRoles[] = 'Supervisor';
-                                        }
-                                    @endphp
-                                    @if (count($legacyRoles) > 0)
-                                        @foreach ($legacyRoles as $role)
-                                            <span class="badge bg-primary me-1">{{ $role }}</span>
-                                        @endforeach
-                                    @else
-                                        <span class="text-muted">No legacy roles</span>
-                                    @endif
-                                </p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Dynamic Roles</label>
+                                <label class="form-label fw-bold">Roles</label>
                                 <p class="form-control-plaintext">
                                     @if ($user->roles->count() > 0)
                                         @foreach ($user->roles as $role)
@@ -169,8 +145,7 @@
                             @if (
                                 $user->id !== auth()->id() &&
                                     auth()->user()->hasRole('admin') &&
-                                    !$user->hasRole('admin') &&
-                                    !$user->is_admin &&
+                                    !$user->isAdmin() &&
                                     $user->is_active &&
                                     !session('impersonation.active'))
                                 <form method="POST" action="{{ route('admin.impersonation.start', $user) }}" class="d-inline">

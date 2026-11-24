@@ -47,7 +47,10 @@
     </header>
 
     <main class="py-4">
-        <div class="container">
+        <div @class([
+            'container' => !auth()->check() || !auth()->user()->dashboard_full_width,
+            'px-3 px-md-4' => auth()->check() && auth()->user()->dashboard_full_width,
+        ])>
             @if (session('impersonation.active') && auth()->check())
                 <div class="alert alert-warning d-flex flex-column flex-md-row justify-content-between align-items-md-center"
                     role="alert">
@@ -65,7 +68,7 @@
                 </div>
             @endif
 
-            @if (($activeSiteStatus ?? null) && auth()->check() && (auth()->user()->hasRole('admin') || auth()->user()->is_admin))
+            @if (($activeSiteStatus ?? null) && auth()->check() && auth()->user()->isAdmin())
                 <div class="alert alert-dark d-flex flex-column flex-md-row justify-content-between align-items-md-center"
                     role="alert">
                     <div>

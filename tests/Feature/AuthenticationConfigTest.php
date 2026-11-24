@@ -188,8 +188,7 @@ class AuthenticationConfigTest extends TestCase
     {
         Config::set('auth.type', 'laravel');
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -233,8 +232,7 @@ class AuthenticationConfigTest extends TestCase
     {
         Config::set('auth.type', 'cas');
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 

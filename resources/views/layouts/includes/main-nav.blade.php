@@ -13,7 +13,7 @@
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav me-auto">
                         @auth
-                            @if (auth()->user()->hasRole('admin') || auth()->user()->is_admin)
+                            @if (auth()->user()->isAdmin())
                                 <li class="nav-item">
                                     <a class="nav-link ucr-white-text ucr-white-text-hover-gold" href="{{ route('home') }}">
                                         <i class="fas fa-shield-alt me-1"></i>Admin Dashboard
@@ -35,7 +35,7 @@
                                     </a>
                                 </li>
                             @endif --}}
-                            @if (auth()->user()->hasRole('admin') || auth()->user()->hasRole('manager'))
+                            @if (auth()->user()->isAdmin() || auth()->user()->hasRole('manager'))
                                 <li class="nav-item dropdown">
                                     <a class="nav-link dropdown-toggle ucr-white-text ucr-white-text-hover-gold"
                                         href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown"
@@ -61,7 +61,7 @@
                                                 <i class="fas fa-users me-1"></i>Manage Users
                                             </a>
                                         </li>
-                                        @if (auth()->user()->hasRole('admin') || auth()->user()->is_admin)
+                                        @if (auth()->user()->isAdmin())
                                             <li>
                                                 <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
                                                     href="{{ route('admin.email-dispatches.index') }}">
@@ -92,7 +92,7 @@
                                     @endif
                                 </a>
                                 <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                    @if (auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->is_admin))
+                                    @if (auth()->user() && auth()->user()->isAdmin())
                                         <li>
                                             <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
                                                 href="{{ route('home') }}">
@@ -113,7 +113,7 @@
                                             <i class="fas fa-user me-1"></i>My Profile
                                         </a>
                                     </li>
-                                    @if (auth()->user() && (auth()->user()->hasRole('admin') || auth()->user()->hasRole('manager')))
+                                    @if (auth()->user() && (auth()->user()->isAdmin() || auth()->user()->hasRole('manager')))
                                         <li>
                                             <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
                                                 href="{{ route('users.index') }}">
@@ -138,7 +138,7 @@
                                                 <i class="fas fa-cog me-1"></i>Authentication Config
                                             </a>
                                         </li>
-                                        @if (auth()->user()->hasRole('admin') || auth()->user()->is_admin)
+                                        @if (auth()->user()->isAdmin())
                                             <li>
                                                 <a class="dropdown-item ucr-blue-text ucr-blue-text-hover-blue"
                                                     href="{{ route('site-status-config.edit') }}">

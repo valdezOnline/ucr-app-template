@@ -47,6 +47,8 @@ class UserDashboardController extends Controller
 
         $displayMode = $user->dashboard_display_mode ?? 'normal';
         $userGroups = $user->dashboard_groups ?? [];
+        $groupDisplayMode = $user->dashboard_group_display_mode ?? 'accordion';
+        $dashboardFullWidth = (bool) ($user->dashboard_full_width ?? false);
 
         $shortcuts = collect($user->dashboard_shortcuts ?? [])
             ->filter(fn(array $shortcut) => isset($shortcut['id'], $shortcut['name'], $shortcut['url'], $shortcut['type']))
@@ -91,6 +93,8 @@ class UserDashboardController extends Controller
             'groupedApplications',
             'displayMode',
             'userGroups',
+            'groupDisplayMode',
+            'dashboardFullWidth',
             'shortcutsByCategory',
             'shortcutCategories'
         ));
@@ -273,6 +277,25 @@ class UserDashboardController extends Controller
     }
 
     /**
+     * Update the user's application layout width preference.
+     */
+    public function updateFullWidth(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'full_width' => ['required', 'boolean'],
+        ]);
+
+        $user = $request->user();
+        $user->dashboard_full_width = $validated['full_width'];
+        $user->save();
+
+        return response()->json([
+            'message' => 'Application width updated successfully.',
+            'full_width' => (bool) $validated['full_width'],
+        ]);
+    }
+
+    /**
      * Create or update application groups for the user.
      */
     public function saveApplicationGroups(Request $request): JsonResponse
@@ -283,6 +306,7 @@ class UserDashboardController extends Controller
             'groups.*.name' => ['required', 'string', 'max:100'],
             'groups.*.application_ids' => ['present', 'array'],
             'groups.*.application_ids.*' => ['integer'],
+            'group_display_mode' => ['nullable', Rule::in(['tabs', 'accordion'])],
         ]);
 
         $user = $request->user();
@@ -307,6 +331,7 @@ class UserDashboardController extends Controller
 
         // Store groups configuration
         $user->dashboard_groups = $validated['groups'];
+        $user->dashboard_group_display_mode = $validated['group_display_mode'] ?? ($user->dashboard_group_display_mode ?? 'accordion');
         $user->save();
 
         return response()->json([

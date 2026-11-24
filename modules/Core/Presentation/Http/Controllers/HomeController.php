@@ -15,7 +15,7 @@ class HomeController extends Controller
     {
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
-            if (!auth()->user()->hasRole('admin') && !auth()->user()->is_admin) {
+            if (!auth()->user()->isAdmin()) {
                 abort(403, 'Access denied. This admin dashboard is restricted to administrators only.');
             }
             return $next($request);
@@ -38,9 +38,9 @@ class HomeController extends Controller
             'active_users' => \Modules\Core\Models\User::where('is_active', true)->count(),
             'inactive_users' => \Modules\Core\Models\User::where('is_active', false)->count(),
             'online_users' => $onlineUsers->count(),
-            'admin_users' => \Modules\Core\Models\User::where('is_admin', true)->count(),
-            'manager_users' => \Modules\Core\Models\User::where('is_manager', true)->count(),
-            'supervisor_users' => \Modules\Core\Models\User::where('is_supervisor', true)->count(),
+            'admin_users' => \Modules\Core\Models\User::withRole('admin')->count(),
+            'manager_users' => \Modules\Core\Models\User::withRole('manager')->count(),
+            'supervisor_users' => \Modules\Core\Models\User::withRole('supervisor')->count(),
             'total_roles' => \Modules\Core\Models\Role::count(),
             'active_roles' => \Modules\Core\Models\Role::where('is_active', true)->count(),
             'total_applications' => \Modules\Core\Models\Application::count(),

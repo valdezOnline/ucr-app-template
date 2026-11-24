@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
         //     'last_name' => 'User',
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
-        //     'is_admin' => true,
+        //     // Then grant the admin system role: ->assignRole('admin')
         // ]);
 
         // Seed roles and applications for the dynamic role system

@@ -21,11 +21,11 @@ class ApplicationController extends Controller
             $managerAllowedActions = ['index', 'show', 'assignRole', 'removeRole', 'assignUser', 'removeUser'];
 
             if (in_array($action, $managerAllowedActions)) {
-                if (!$user->hasRole('admin') && !$user->hasRole('manager') && !$user->hasRole('library_manager')) {
+                if (!$user->isAdmin() && !$user->hasRole('manager') && !$user->hasRole('library_manager')) {
                     abort(403, 'You do not have permission to access this resource.');
                 }
             } else {
-                if (!$user->hasRole('admin')) {
+                if (!$user->isAdmin()) {
                     abort(403, 'Only administrators can create, update, or delete applications.');
                 }
             }

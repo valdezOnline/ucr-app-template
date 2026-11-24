@@ -31,11 +31,11 @@ class UserController extends Controller
             $adminOnlyActions = ['destroy'];
 
             if (in_array($action, $adminOnlyActions)) {
-                if (!$user->hasRole('admin')) {
+                if (!$user->isAdmin()) {
                     abort(403, 'Only administrators can delete users.');
                 }
             } elseif (in_array($action, $managerAllowedActions)) {
-                if (!$user->hasRole('admin') && !$user->hasRole('manager') && !$user->hasRole('library_manager')) {
+                if (!$user->isAdmin() && !$user->hasRole('manager') && !$user->hasRole('library_manager')) {
                     abort(403, 'You do not have permission to perform this action.');
                 }
             }
@@ -117,9 +117,6 @@ class UserController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'supervisor_net_id' => ['nullable', 'string', 'max:255'],
             'supervisor_name' => ['nullable', 'string', 'max:255'],
-            'is_admin' => ['boolean'],
-            'is_manager' => ['boolean'],
-            'is_supervisor' => ['boolean'],
             'is_active' => ['boolean'],
             'password' => ['required', Rules\Password::defaults()],
             'roles' => ['array'],
@@ -132,8 +129,8 @@ class UserController extends Controller
         $validated['password'] = Hash::make($validated['password']);
         $validated['name'] = trim($validated['first_name'] . ' ' . $validated['last_name']);
 
-        // Prevent managers from assigning admin privileges
-        if (!auth()->user()->hasRole('admin') && isset($validated['is_admin']) && $validated['is_admin']) {
+        // Prevent non-admins from assigning the admin system role
+        if (!auth()->user()->isAdmin() && $this->includesAdminRole($validated['roles'] ?? [])) {
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Only administrators can assign administrator privileges.');
@@ -238,9 +235,6 @@ class UserController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'supervisor_net_id' => ['nullable', 'string', 'max:255'],
             'supervisor_name' => ['nullable', 'string', 'max:255'],
-            'is_admin' => ['boolean'],
-            'is_manager' => ['boolean'],
-            'is_supervisor' => ['boolean'],
             'is_active' => ['boolean'],
             'password' => ['nullable', Rules\Password::defaults()],
             'roles' => ['array'],
@@ -257,16 +251,23 @@ class UserController extends Controller
             unset($validated['password']);
         }
 
-        // Prevent managers from assigning admin privileges
-        if (!auth()->user()->hasRole('admin')) {
-            if (isset($validated['is_admin']) && $validated['is_admin'] && !$user->is_admin) {
+        // Non-admins cannot grant or remove the admin system role
+        if (!auth()->user()->isAdmin()) {
+            $requestedAdmin = $this->includesAdminRole($validated['roles'] ?? []);
+            $currentlyAdmin = $user->isAdmin();
+
+            if ($requestedAdmin && !$currentlyAdmin) {
                 return redirect()->back()
                     ->withInput()
                     ->with('error', 'Only administrators can assign administrator privileges.');
             }
-            // If user is already admin and manager tries to remove it, preserve admin status
-            if ($user->is_admin) {
-                $validated['is_admin'] = true;
+
+            // Preserve existing admin membership when a non-admin edits the user
+            if ($currentlyAdmin && !$requestedAdmin) {
+                $validated['roles'] = array_merge(
+                    $validated['roles'] ?? [],
+                    $user->roles()->where('name', 'admin')->pluck('roles.id')->toArray()
+                );
             }
         }
 
@@ -309,6 +310,20 @@ class UserController extends Controller
 
         return redirect()->route('users.show', $user)
             ->with('success', 'User updated successfully.');
+    }
+
+    /**
+     * Determine whether a list of submitted role IDs includes the admin system role.
+     */
+    private function includesAdminRole(array $roleIds): bool
+    {
+        if (empty($roleIds)) {
+            return false;
+        }
+
+        return \Modules\Core\Models\Role::where('name', 'admin')
+            ->whereIn('id', $roleIds)
+            ->exists();
     }
 
     /**

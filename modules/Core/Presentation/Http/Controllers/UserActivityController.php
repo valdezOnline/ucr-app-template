@@ -11,7 +11,7 @@ class UserActivityController extends Controller
     {
         $user = auth()->user();
 
-        abort_unless($user && ($user->hasRole('admin') || $user->is_admin), 403, 'Access denied.');
+        abort_unless($user && $user->isAdmin(), 403, 'Access denied.');
 
         return response()->json([
             'online_users' => User::online()->orderByDesc('last_seen_at')->get()->map(function (User $activeUser) {

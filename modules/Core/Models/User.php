@@ -36,9 +36,6 @@ class User extends Authenticatable
         'title',
         'supervisor_net_id',
         'supervisor_name',
-        'is_admin',
-        'is_manager',
-        'is_supervisor',
         'is_active',
         'last_login_at',
         'last_logout_at',
@@ -47,6 +44,8 @@ class User extends Authenticatable
         'dashboard_shortcuts',
         'dashboard_display_mode',
         'dashboard_groups',
+        'dashboard_group_display_mode',
+        'dashboard_full_width',
         'dashboard_application_groups',
         'dashboard_locked',
         'password',
@@ -75,11 +74,9 @@ class User extends Authenticatable
             'last_logout_at' => 'datetime',
             'last_seen_at' => 'datetime',
             'password' => 'hashed',
-            'is_admin' => 'boolean',
-            'is_manager' => 'boolean',
-            'is_supervisor' => 'boolean',
             'is_active' => 'boolean',
             'dashboard_locked' => 'boolean',
+            'dashboard_full_width' => 'boolean',
             'dashboard_application_order' => 'array',
             'dashboard_shortcuts' => 'array',
             'dashboard_groups' => 'array',
@@ -116,45 +113,18 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the user's roles as an array (including both old and new system).
+     * Get the display names of the user's active roles.
      */
     public function getRoles(): array
     {
-        $roles = [];
-
-        // Legacy role system
-        if ($this->is_admin)
-            $roles[] = 'Admin';
-        if ($this->is_manager)
-            $roles[] = 'Manager';
-        if ($this->is_supervisor)
-            $roles[] = 'Supervisor';
-
-        // Dynamic role system
-        $dynamicRoles = $this->roles()->active()->pluck('display_name')->toArray();
-        $roles = array_merge($roles, $dynamicRoles);
-
-        return array_unique($roles);
+        return $this->roles()->active()->pluck('display_name')->unique()->values()->toArray();
     }
 
     /**
-     * Check if user has a specific role (supports both old and new system).
+     * Check if user has a specific role by name or display name.
      */
     public function hasRole(string $role): bool
     {
-        // Check legacy roles
-        $legacyCheck = match (strtolower($role)) {
-            'admin' => $this->is_admin,
-            'manager' => $this->is_manager,
-            'supervisor' => $this->is_supervisor,
-            default => false,
-        };
-
-        if ($legacyCheck) {
-            return true;
-        }
-
-        // Check dynamic roles
         return $this->roles()->active()
             ->where(function ($query) use ($role) {
                 $query->where('name', strtolower($role))
@@ -193,11 +163,19 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is a manager (supports both old and new system).
+     * Check if user is an administrator (has the 'admin' system role).
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Check if user is a manager (has the 'manager' or 'library_manager' role).
      */
     public function isManager(): bool
     {
-        return $this->is_manager || $this->hasRole('manager') || $this->hasRole('library_manager');
+        return $this->hasRole('manager') || $this->hasRole('library_manager');
     }
 
     /**
@@ -247,11 +225,8 @@ class User extends Authenticatable
      */
     public function scopeWithRole($query, string $role)
     {
-        return match (strtolower($role)) {
-            'admin' => $query->where('is_admin', true),
-            'manager' => $query->where('is_manager', true),
-            'supervisor' => $query->where('is_supervisor', true),
-            default => $query,
-        };
+        return $query->whereHas('roles', function ($q) use ($role) {
+            $q->where('name', strtolower($role))->orWhere('display_name', $role);
+        });
     }
 }

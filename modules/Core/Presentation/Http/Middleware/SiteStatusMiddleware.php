@@ -40,7 +40,7 @@ class SiteStatusMiddleware
         }
 
         $user = $request->user();
-        if ($user && ($user->hasRole('admin') || $user->is_admin)) {
+        if ($user && $user->isAdmin()) {
             return $next($request);
         }
 

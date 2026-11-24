@@ -12,8 +12,7 @@ class AuthConfigAdminAccessTest extends TestCase
 
     public function test_admin_can_access_auth_config_page(): void
     {
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 

@@ -171,6 +171,57 @@ class UserDashboardPersonalizationTest extends TestCase
         $this->assertSame('small', $user->refresh()->dashboard_display_mode);
     }
 
+    public function test_user_can_update_dashboard_width_preference(): void
+    {
+        $user = User::factory()->create(['dashboard_full_width' => false]);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->postJson(route('dashboard.full-width.update'), [
+                'full_width' => true,
+            ], ['X-CSRF-TOKEN' => 'test-token'])
+            ->assertOk()
+            ->assertJson([
+                'message' => 'Application width updated successfully.',
+                'full_width' => true,
+            ]);
+
+        $this->assertTrue($user->refresh()->dashboard_full_width);
+    }
+
+    public function test_dashboard_width_preference_controls_the_main_layout(): void
+    {
+        $containerUser = User::factory()->create(['dashboard_full_width' => false]);
+
+        $this->actingAs($containerUser)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertViewHas('dashboardFullWidth', false)
+            ->assertSee('<main class="py-4">', false)
+            ->assertSee('<div class="container">', false)
+            ->assertSee('id="dashboardWidthContainer" value="container"', false);
+
+        $fullWidthUser = User::factory()->create(['dashboard_full_width' => true]);
+
+        $this->actingAs($fullWidthUser)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertViewHas('dashboardFullWidth', true)
+            ->assertSee('<div class="px-3 px-md-4">', false)
+            ->assertSee('id="dashboardWidthFull" value="full"', false);
+    }
+
+    public function test_profile_displays_dashboard_width_preference(): void
+    {
+        $user = User::factory()->create(['dashboard_full_width' => true]);
+
+        $this->actingAs($user)
+            ->get(route('profile'))
+            ->assertOk()
+            ->assertSee('Dashboard Width')
+            ->assertSee('Full width');
+    }
+
     public function test_user_can_save_application_groups(): void
     {
         $user = User::factory()->create();
@@ -204,16 +255,19 @@ class UserDashboardPersonalizationTest extends TestCase
                         'application_ids' => [$applications[1]->id],
                     ],
                 ],
+                'group_display_mode' => 'tabs',
             ], ['X-CSRF-TOKEN' => 'test-token'])
             ->assertOk()
             ->assertJson([
                 'message' => 'Application groups saved successfully.',
             ]);
 
-        $groups = $user->refresh()->dashboard_groups;
+        $user->refresh();
+        $groups = $user->dashboard_groups;
         $this->assertCount(2, $groups);
         $this->assertSame('HR Tools', $groups[0]['name']);
         $this->assertSame('Development', $groups[1]['name']);
+        $this->assertSame('tabs', $user->dashboard_group_display_mode);
     }
 
     public function test_user_can_delete_all_application_groups(): void
@@ -292,8 +346,10 @@ class UserDashboardPersonalizationTest extends TestCase
     {
         $user = User::factory()->create([
             'dashboard_display_mode' => 'small',
+            'dashboard_group_display_mode' => 'tabs',
             'dashboard_groups' => [
                 ['id' => 'group-1', 'name' => 'Work Tools', 'application_ids' => [1]],
+                ['id' => 'group-2', 'name' => 'More Tools', 'application_ids' => [2]],
             ],
         ]);
         $role = Role::create([
@@ -302,9 +358,12 @@ class UserDashboardPersonalizationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $app = Application::create(['name' => 'Test App', 'url' => 'https://test.example.com', 'is_active' => true]);
+        $applications = collect([
+            Application::create(['name' => 'Test App', 'url' => 'https://test.example.com', 'is_active' => true]),
+            Application::create(['name' => 'Second App', 'url' => 'https://test2.example.com', 'is_active' => true]),
+        ]);
         $user->roles()->attach($role->id);
-        $role->applications()->attach($app->id);
+        $role->applications()->attach($applications->pluck('id')->all());
 
         $response = $this->actingAs($user)->get(route('dashboard'));
 
@@ -315,9 +374,43 @@ class UserDashboardPersonalizationTest extends TestCase
         $response->assertSee('applications-display-small');
         $response->assertSee('application-tile-small');
         $response->assertDontSee('application-tile-normal');
+        $response->assertSee('id="application-group-tabs"', false);
+        $response->assertSee('id="groupDisplayModeTabs"', false);
         $response->assertSee('id="add-group-btn"', false);
         $response->assertSee('id="save-groups-btn"', false);
+        $response->assertSee("const applicationGrids = Array.from(document.querySelectorAll('.application-grid'));", false);
+        $response->assertSee('/dashboard/applications/groups');
         $response->assertSee('groupsContainer.appendChild(groupCard)');
+    }
+
+    public function test_dashboard_view_shows_group_accordion_when_selected(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_group_display_mode' => 'accordion',
+            'dashboard_groups' => [
+                ['id' => 'group-1', 'name' => 'Work Tools', 'application_ids' => [1]],
+                ['id' => 'group-2', 'name' => 'More Tools', 'application_ids' => [2]],
+            ],
+        ]);
+        $role = Role::create([
+            'name' => 'staff',
+            'display_name' => 'Staff',
+            'is_active' => true,
+        ]);
+
+        $applications = collect([
+            Application::create(['name' => 'Test App', 'url' => 'https://test.example.com', 'is_active' => true]),
+            Application::create(['name' => 'Second App', 'url' => 'https://test2.example.com', 'is_active' => true]),
+        ]);
+        $user->roles()->attach($role->id);
+        $role->applications()->attach($applications->pluck('id')->all());
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('id="application-groups-accordion"', false);
+        $response->assertSee('id="groupDisplayModeAccordion"', false);
+        $response->assertDontSee('id="application-group-tabs"', false);
     }
 
     public function test_user_can_toggle_dashboard_lock(): void

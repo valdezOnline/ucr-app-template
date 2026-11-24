@@ -50,7 +50,7 @@ class CasAuthController extends Controller
                 Auth::login($user);
                 Log::info('CAS Login Route: Masquerade user authenticated', ['net_id' => $netId]);
 
-                if ($user->hasRole('admin') || $user->is_admin) {
+                if ($user->isAdmin()) {
                     return redirect()->intended(route('home'));
                 }
 
@@ -91,7 +91,7 @@ class CasAuthController extends Controller
                 if ($user && $user->is_active) {
                     Auth::login($user);
 
-                    if ($user->hasRole('admin') || $user->is_admin) {
+                    if ($user->isAdmin()) {
                         return redirect()->intended(route('home'));
                     }
 
@@ -125,7 +125,7 @@ class CasAuthController extends Controller
                 ]);
 
                 $user = User::where('net_id', $netId)->first();
-                if ($user && ($user->hasRole('admin') || $user->is_admin)) {
+                if ($user && $user->isAdmin()) {
                     return redirect()->intended(route('home'));
                 }
 

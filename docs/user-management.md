@@ -18,10 +18,14 @@ This Laravel application provides a comprehensive user management interface that
 - **Automatic Population**: Auto-populate user fields from HR API data
 
 ### Role Management
-- **Administrator**: Full system access
-- **Manager**: Management privileges
-- **Supervisor**: Supervisory access
-- **Custom Roles**: Extensible role system
+All roles are dynamic roles stored in the `roles` table and assigned through `user_roles`.
+
+- **System roles** (`roles.is_system = true`): `admin`, `manager`, `supervisor`. These cannot be deleted or deactivated. Assign them with the role checkboxes on the user form like any other role.
+- **Custom roles**: Created from the Roles page. Can be deactivated when no longer needed.
+
+Only administrators can grant or remove the `admin` role. Non-admins editing a user keep that user's existing admin membership.
+
+Access checks use `User::hasRole()`, `User::isAdmin()`, and `User::isManager()`, which read the `user_roles` table. The former `is_admin`, `is_manager`, and `is_supervisor` columns have been removed.
 
 ### User Status Management
 - **Active/Inactive Status**: Control user access to the system
@@ -54,7 +58,7 @@ $hrInfo = $apiClient->getHrPersonInfo($netId);
 The `users` table includes:
 - Basic Information: `net_id`, `first_name`, `last_name`, `email`
 - HR Information: `department`, `title`, `supervisor_net_id`, `supervisor_name`
-- Role Management: `is_admin`, `is_manager`, `is_supervisor`
+- Role Management: via `user_roles` (see Role Management above)
 - Status: `is_active`
 - Authentication: `password`, `email_verified_at`, `remember_token`
 

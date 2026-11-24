@@ -53,9 +53,6 @@ class UserFactory extends Factory
             ]),
             'supervisor_net_id' => fake()->optional()->userName(),
             'supervisor_name' => fake()->optional()->name(),
-            'is_admin' => false,
-            'is_manager' => false,
-            'is_supervisor' => false,
             'is_active' => true,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
@@ -71,5 +68,29 @@ class UserFactory extends Factory
         return $this->state(fn(array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /**
+     * Give the user the admin system role after creation.
+     */
+    public function admin(): static
+    {
+        return $this->afterCreating(fn($user) => $user->assignRole('admin'));
+    }
+
+    /**
+     * Give the user the manager system role after creation.
+     */
+    public function manager(): static
+    {
+        return $this->afterCreating(fn($user) => $user->assignRole('manager'));
+    }
+
+    /**
+     * Give the user the supervisor system role after creation.
+     */
+    public function supervisor(): static
+    {
+        return $this->afterCreating(fn($user) => $user->assignRole('supervisor'));
     }
 }

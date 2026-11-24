@@ -48,6 +48,26 @@
                                         <i class="fas fa-list"></i>
                                     </label>
                                 </div>
+                                <div class="btn-group btn-group-sm" role="group"
+                                    aria-label="Application layout width">
+                                    <input type="radio" class="btn-check dashboard-width-toggle" name="dashboardWidth"
+                                        id="dashboardWidthContainer" value="container"
+                                        {{ !$dashboardFullWidth ? 'checked' : '' }}
+                                        data-bs-toggle="tooltip" title="Use centered container width">
+                                    <label class="btn btn-outline-secondary" for="dashboardWidthContainer">
+                                        <i class="fas fa-compress-alt"></i>
+                                        <span class="visually-hidden">Centered width</span>
+                                    </label>
+
+                                    <input type="radio" class="btn-check dashboard-width-toggle" name="dashboardWidth"
+                                        id="dashboardWidthFull" value="full"
+                                        {{ $dashboardFullWidth ? 'checked' : '' }}
+                                        data-bs-toggle="tooltip" title="Use full application width">
+                                    <label class="btn btn-outline-secondary" for="dashboardWidthFull">
+                                        <i class="fas fa-expand-alt"></i>
+                                        <span class="visually-hidden">Full width</span>
+                                    </label>
+                                </div>
                                 <button type="button" id="toggle-dashboard-lock"
                                     class="btn btn-secondary btn-sm"
                                     data-bs-toggle="tooltip"
@@ -67,19 +87,82 @@
                         <div class="card-body">
                             @if ($userApplications->count() > 0)
                                 <div id="applications-container" class="applications-display-{{ $displayMode }}">
-                                    @if (!empty($groupedApplications) && count($groupedApplications) > 1)
-                                        @foreach ($groupedApplications as $groupId => $groupData)
-                                            <div class="application-group mb-4" data-group-id="{{ $groupId }}">
-                                                <h6 class="text-muted text-uppercase small mb-3">
-                                                    {{ $groupData['name'] ?? 'Applications' }}
-                                                </h6>
-                                                <div class="row application-grid" data-group-id="{{ $groupId }}">
-                                                    @foreach ($groupData['applications'] as $application)
-                                                        @include('application-tile', ['application' => $application, 'displayMode' => $displayMode])
-                                                    @endforeach
+                                    @php
+                                        $hasMultipleGroups = !empty($groupedApplications) && count($groupedApplications) > 1;
+                                    @endphp
+                                    @if ($hasMultipleGroups && $groupDisplayMode === 'tabs')
+                                        <ul class="nav nav-tabs mb-3" id="application-group-tabs" role="tablist">
+                                            @foreach ($groupedApplications as $groupId => $groupData)
+                                                @php
+                                                    $tabId = 'dashboard-group-tab-' . $loop->index;
+                                                    $paneId = 'dashboard-group-pane-' . $loop->index;
+                                                @endphp
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link {{ $loop->first ? 'active' : '' }}"
+                                                        id="{{ $tabId }}"
+                                                        data-bs-toggle="tab"
+                                                        data-bs-target="#{{ $paneId }}"
+                                                        type="button"
+                                                        role="tab"
+                                                        aria-controls="{{ $paneId }}"
+                                                        aria-selected="{{ $loop->first ? 'true' : 'false' }}">
+                                                        {{ $groupData['name'] ?? 'Applications' }}
+                                                    </button>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                        <div class="tab-content" id="application-group-tabs-content">
+                                            @foreach ($groupedApplications as $groupId => $groupData)
+                                                @php
+                                                    $tabId = 'dashboard-group-tab-' . $loop->index;
+                                                    $paneId = 'dashboard-group-pane-' . $loop->index;
+                                                @endphp
+                                                <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}"
+                                                    id="{{ $paneId }}"
+                                                    role="tabpanel"
+                                                    aria-labelledby="{{ $tabId }}"
+                                                    tabindex="0">
+                                                    <div class="row application-grid py-3" data-group-id="{{ $groupId }}">
+                                                        @foreach ($groupData['applications'] as $application)
+                                                            @include('application-tile', ['application' => $application, 'displayMode' => $displayMode])
+                                                        @endforeach
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        @endforeach
+                                            @endforeach
+                                        </div>
+                                    @elseif ($hasMultipleGroups)
+                                        <div class="accordion" id="application-groups-accordion">
+                                            @foreach ($groupedApplications as $groupId => $groupData)
+                                                @php
+                                                    $headerId = 'dashboard-group-header-' . $loop->index;
+                                                    $collapseId = 'dashboard-group-collapse-' . $loop->index;
+                                                @endphp
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header" id="{{ $headerId }}">
+                                                        <button class="accordion-button {{ $loop->first ? '' : 'collapsed' }}"
+                                                            type="button"
+                                                            data-bs-toggle="collapse"
+                                                            data-bs-target="#{{ $collapseId }}"
+                                                            aria-expanded="{{ $loop->first ? 'true' : 'false' }}"
+                                                            aria-controls="{{ $collapseId }}">
+                                                            {{ $groupData['name'] ?? 'Applications' }}
+                                                        </button>
+                                                    </h2>
+                                                    <div id="{{ $collapseId }}"
+                                                        class="accordion-collapse collapse {{ $loop->first ? 'show' : '' }}"
+                                                        aria-labelledby="{{ $headerId }}"
+                                                        data-bs-parent="#application-groups-accordion">
+                                                        <div class="accordion-body">
+                                                            <div class="row application-grid" data-group-id="{{ $groupId }}">
+                                                                @foreach ($groupData['applications'] as $application)
+                                                                    @include('application-tile', ['application' => $application, 'displayMode' => $displayMode])
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     @else
                                         <p class="text-muted small mb-3">
                                             Drag and drop your application tiles to reorder them.
@@ -188,6 +271,22 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small text-muted d-block">Group display style on dashboard:</label>
+                        <div class="btn-group btn-group-sm w-100" role="group" aria-label="Group display style">
+                            <input type="radio" class="btn-check" name="groupDisplayMode" id="groupDisplayModeAccordion"
+                                value="accordion" {{ $groupDisplayMode !== 'tabs' ? 'checked' : '' }}>
+                            <label class="btn btn-outline-secondary" for="groupDisplayModeAccordion">
+                                <i class="fas fa-list-ul me-1"></i>Accordion
+                            </label>
+
+                            <input type="radio" class="btn-check" name="groupDisplayMode" id="groupDisplayModeTabs"
+                                value="tabs" {{ $groupDisplayMode === 'tabs' ? 'checked' : '' }}>
+                            <label class="btn btn-outline-secondary" for="groupDisplayModeTabs">
+                                <i class="fas fa-folder-open me-1"></i>Tabs
+                            </label>
+                        </div>
+                    </div>
                     <div id="groups-container">
                         @foreach ($userGroups as $group)
                             <div class="card mb-3 group-card" data-group-id="{{ $group['id'] }}">
@@ -438,6 +537,39 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            const dashboardWidthToggles = document.querySelectorAll('.dashboard-width-toggle');
+            dashboardWidthToggles.forEach(toggle => {
+                toggle.addEventListener('change', async (e) => {
+                    const fullWidth = e.target.value === 'full';
+                    const toggleContainer = document.querySelector('input[name="dashboardWidth"]:not(:checked)');
+
+                    try {
+                        const response = await fetch("{{ route('dashboard.full-width.update') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({ full_width: fullWidth })
+                        });
+
+                        const result = await response.json().catch(() => null);
+
+                        if (!response.ok) {
+                            throw new Error(result?.message || 'Failed to update application width.');
+                        }
+
+                        window.location.reload();
+                    } catch (error) {
+                        alert(error instanceof Error ? error.message : 'Failed to save width preference. Please try again.');
+                        if (toggleContainer) {
+                            toggleContainer.checked = true;
+                        }
+                    }
+                });
+            });
             
             // Display Mode Toggle
             const displayModeToggles = document.querySelectorAll('.display-mode-toggle');
@@ -531,6 +663,7 @@
             if (saveGroupsBtn) {
                 saveGroupsBtn.addEventListener('click', async () => {
                     const groups = [];
+                    const selectedGroupDisplayMode = document.querySelector('input[name="groupDisplayMode"]:checked')?.value || 'accordion';
                     let validationError = '';
 
                     document.querySelectorAll('.group-card').forEach(card => {
@@ -577,7 +710,10 @@
                                 'Content-Type': 'application/json',
                                 'X-CSRF-TOKEN': csrfToken
                             },
-                            body: JSON.stringify({ groups })
+                            body: JSON.stringify({
+                                groups,
+                                group_display_mode: selectedGroupDisplayMode
+                            })
                         });
 
                         const result = await response.json().catch(() => null);
@@ -687,16 +823,19 @@
             setCreateMode();
 
             const applicationGrid = document.getElementById('application-grid');
+            const applicationGrids = Array.from(document.querySelectorAll('.application-grid'));
             const saveOrderButton = document.getElementById('save-application-order');
             const toggleLockButton = document.getElementById('toggle-dashboard-lock');
 
-            if (!applicationGrid || !saveOrderButton || !csrfToken) {
+            if (!saveOrderButton || !csrfToken) {
                 return;
             }
 
             let draggedElement = null;
+            let sourceGrid = null;
             let hasOrderChanges = false;
             let isDashboardLocked = {{ json_encode(auth()->user()->dashboard_locked) }};
+            const isGroupedView = applicationGrid === null && applicationGrids.length > 0;
 
             const markOrderChanged = () => {
                 if (!hasOrderChanges) {
@@ -750,7 +889,36 @@
                 });
             }
 
-            const draggableItems = applicationGrid.querySelectorAll('.draggable-application');
+            const syncGroupCheckboxesWithGrid = () => {
+                if (!isGroupedView) {
+                    return;
+                }
+
+                const groupApplicationIds = new Map();
+                applicationGrids.forEach((grid) => {
+                    const groupId = grid.dataset.groupId;
+                    if (!groupId || groupId === 'ungrouped') {
+                        return;
+                    }
+
+                    const ids = Array.from(grid.querySelectorAll('.draggable-application'))
+                        .map((item) => Number.parseInt(item.dataset.applicationId, 10))
+                        .filter((id) => Number.isInteger(id));
+                    groupApplicationIds.set(groupId, ids);
+                });
+
+                document.querySelectorAll('.group-card').forEach((card) => {
+                    const groupId = card.dataset.groupId;
+                    const selectedIds = groupApplicationIds.get(groupId) ?? [];
+
+                    card.querySelectorAll('.group-app-checkbox').forEach((checkbox) => {
+                        const appId = Number.parseInt(checkbox.dataset.appId, 10);
+                        checkbox.checked = selectedIds.includes(appId);
+                    });
+                });
+            };
+
+            const draggableItems = document.querySelectorAll('.draggable-application');
             draggableItems.forEach((item) => {
                 item.addEventListener('dragstart', (event) => {
                     if (isDashboardLocked) {
@@ -758,6 +926,7 @@
                         return;
                     }
                     draggedElement = item;
+                    sourceGrid = item.closest('.application-grid');
                     item.classList.add('dragging');
                     event.dataTransfer.effectAllowed = 'move';
                 });
@@ -765,54 +934,115 @@
                 item.addEventListener('dragend', () => {
                     item.classList.remove('dragging');
                     draggedElement = null;
+                    sourceGrid = null;
                 });
             });
 
-            applicationGrid.addEventListener('dragover', (event) => {
-                if (isDashboardLocked) {
-                    return;
-                }
-                event.preventDefault();
-                if (!draggedElement) {
-                    return;
-                }
+            applicationGrids.forEach((grid) => {
+                grid.addEventListener('dragover', (event) => {
+                    if (isDashboardLocked) {
+                        return;
+                    }
 
-                const dropTarget = event.target.closest('.draggable-application');
-                if (!dropTarget || dropTarget === draggedElement) {
-                    return;
-                }
+                    event.preventDefault();
+                    if (!draggedElement) {
+                        return;
+                    }
 
-                const targetRect = dropTarget.getBoundingClientRect();
-                const insertAfter = event.clientY > (targetRect.top + (targetRect.height / 2));
+                    const dropTarget = event.target.closest('.draggable-application');
 
-                if (insertAfter) {
-                    applicationGrid.insertBefore(draggedElement, dropTarget.nextSibling);
-                } else {
-                    applicationGrid.insertBefore(draggedElement, dropTarget);
-                }
+                    if (!dropTarget) {
+                        if (grid !== sourceGrid || grid.lastElementChild !== draggedElement) {
+                            grid.appendChild(draggedElement);
+                            sourceGrid = grid;
+                            markOrderChanged();
+                            syncGroupCheckboxesWithGrid();
+                        }
+                        return;
+                    }
 
-                markOrderChanged();
+                    if (dropTarget === draggedElement) {
+                        return;
+                    }
+
+                    const targetRect = dropTarget.getBoundingClientRect();
+                    const insertAfter = event.clientY > (targetRect.top + (targetRect.height / 2));
+
+                    if (insertAfter) {
+                        grid.insertBefore(draggedElement, dropTarget.nextSibling);
+                    } else {
+                        grid.insertBefore(draggedElement, dropTarget);
+                    }
+
+                    sourceGrid = grid;
+                    markOrderChanged();
+                    syncGroupCheckboxesWithGrid();
+                });
             });
 
             saveOrderButton.addEventListener('click', async () => {
-                const applicationIds = Array.from(applicationGrid.querySelectorAll('.draggable-application'))
-                    .map((item) => Number.parseInt(item.dataset.applicationId, 10))
-                    .filter((id) => Number.isInteger(id));
-
                 saveOrderButton.disabled = true;
 
                 try {
-                    const response = await fetch("{{ route('dashboard.applications.order') }}", {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken
-                        },
-                        body: JSON.stringify({
-                            application_ids: applicationIds
-                        })
-                    });
+                    let response;
+                    if (isGroupedView) {
+                        const selectedGroupDisplayMode = document.querySelector('input[name="groupDisplayMode"]:checked')?.value || 'accordion';
+                        const applicationIdsByGroupId = new Map();
+
+                        applicationGrids.forEach((grid) => {
+                            const groupId = grid.dataset.groupId;
+                            if (!groupId) {
+                                return;
+                            }
+
+                            const applicationIds = Array.from(grid.querySelectorAll('.draggable-application'))
+                                .map((item) => Number.parseInt(item.dataset.applicationId, 10))
+                                .filter((id) => Number.isInteger(id));
+
+                            applicationIdsByGroupId.set(groupId, applicationIds);
+                        });
+
+                        const groups = Array.from(document.querySelectorAll('.group-card')).map((card) => {
+                            const groupId = card.dataset.groupId;
+                            const nameInput = card.querySelector('.group-name-input');
+                            const fallbackName = card.querySelector('h6')?.textContent?.trim() || 'New Group';
+
+                            return {
+                                id: groupId,
+                                name: nameInput?.value.trim() || fallbackName,
+                                application_ids: applicationIdsByGroupId.get(groupId) ?? []
+                            };
+                        });
+
+                        response = await fetch("{{ route('dashboard.applications.groups.save') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({
+                                groups,
+                                group_display_mode: selectedGroupDisplayMode
+                            })
+                        });
+                    } else {
+                        const applicationIds = Array.from(applicationGrid.querySelectorAll('.draggable-application'))
+                            .map((item) => Number.parseInt(item.dataset.applicationId, 10))
+                            .filter((id) => Number.isInteger(id));
+
+                        response = await fetch("{{ route('dashboard.applications.order') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({
+                                application_ids: applicationIds
+                            })
+                        });
+                    }
 
                     if (!response.ok) {
                         throw new Error('Unable to save order');

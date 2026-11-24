@@ -24,8 +24,7 @@ class SiteStatusModeTest extends TestCase
 
     public function test_admin_can_update_site_status_mode(): void
     {
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -49,8 +48,7 @@ class SiteStatusModeTest extends TestCase
 
     public function test_custom_message_mode_requires_message(): void
     {
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -78,7 +76,6 @@ class SiteStatusModeTest extends TestCase
         );
 
         $user = User::factory()->create([
-            'is_admin' => false,
             'is_active' => true,
         ]);
 
@@ -94,8 +91,7 @@ class SiteStatusModeTest extends TestCase
             'message' => null,
         ]);
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -144,8 +140,7 @@ class SiteStatusModeTest extends TestCase
             'message' => 'Planned maintenance window is in progress.',
         ]);
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -162,8 +157,7 @@ class SiteStatusModeTest extends TestCase
     {
         Config::set('auth.type', 'cas');
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 
@@ -213,8 +207,7 @@ class SiteStatusModeTest extends TestCase
             'message' => 'Maintenance in progress.',
         ]);
 
-        $admin = User::factory()->create([
-            'is_admin' => true,
+        $admin = User::factory()->admin()->create([
             'is_active' => true,
         ]);
 

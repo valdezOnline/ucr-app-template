@@ -24,7 +24,7 @@ class AdminImpersonationController extends Controller
     {
         $admin = $request->user();
 
-        if (!$admin || (!$admin->hasRole('admin') && !$admin->is_admin)) {
+        if (!$admin || !$admin->isAdmin()) {
             abort(403, 'Only administrators can start impersonation.');
         }
 

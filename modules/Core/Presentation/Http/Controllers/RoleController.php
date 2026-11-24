@@ -14,7 +14,7 @@ class RoleController extends Controller
     {
         $this->middleware('auth');
         $this->middleware(function ($request, $next) {
-            if (!auth()->user()->hasRole('admin')) {
+            if (!auth()->user()->isAdmin()) {
                 abort(403, 'Only administrators can manage roles.');
             }
             return $next($request);
@@ -142,6 +142,11 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
+        if ($role->is_system) {
+            return redirect()->route('roles.index')
+                ->with('error', 'System roles cannot be deleted.');
+        }
+
         // Check if role is assigned to any users or applications
         if ($role->users()->count() > 0 || $role->applications()->count() > 0) {
             return redirect()->route('roles.index')
@@ -197,6 +202,11 @@ class RoleController extends Controller
      */
     public function toggleStatus(Role $role)
     {
+        if ($role->is_system) {
+            return redirect()->back()
+                ->with('error', 'System roles cannot be deactivated.');
+        }
+
         $role->update(['is_active' => !$role->is_active]);
 
         $status = $role->is_active ? 'activated' : 'deactivated';

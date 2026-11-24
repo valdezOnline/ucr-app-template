@@ -155,8 +155,7 @@
                                                     @if (
                                                         $user->id !== auth()->id() &&
                                                             auth()->user()->hasRole('admin') &&
-                                                            !$user->hasRole('admin') &&
-                                                            !$user->is_admin &&
+                                                            !$user->isAdmin() &&
                                                             $user->is_active &&
                                                             !session('impersonation.active'))
                                                         <form method="POST"

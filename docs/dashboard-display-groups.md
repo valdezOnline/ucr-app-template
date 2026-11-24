@@ -2,7 +2,7 @@
 
 ## Overview
 
-The dashboard now supports three display modes for application tiles and allows users to organize applications into custom groups.
+The dashboard now supports three display modes for application tiles, centered or full-width application layouts, and custom application groups.
 
 ## Features
 
@@ -30,8 +30,14 @@ Users can choose from three display modes for application tiles:
 Users can organize applications into custom groups:
 - Create custom groups (e.g., "HR Tools", "Development", "Finance")
 - Drag and drop applications into groups
+- Drag and drop application tiles while viewing grouped sections (including between groups)
 - Each group displays with its name as a section header
 - Ungrouped applications appear in an "Ungrouped" section
+- Choose how groups render on the dashboard: **Tabs** or **Accordion**
+
+### 3. Application Width
+
+Users can choose between the standard centered `container` layout and a full-width layout from the application card header. The preference is stored on the authenticated user's profile and applies to pages using the shared application layout. The default remains the centered container layout.
 
 ## Implementation Details
 
@@ -45,6 +51,8 @@ Columns added to the `users` table:
 ALTER TABLE users ADD COLUMN dashboard_display_mode ENUM('normal', 'small', 'text') DEFAULT 'normal';
 ALTER TABLE users ADD COLUMN dashboard_groups JSON NULL;
 ALTER TABLE users ADD COLUMN dashboard_application_groups JSON NULL;
+ALTER TABLE users ADD COLUMN dashboard_group_display_mode ENUM('tabs', 'accordion') DEFAULT 'accordion';
+ALTER TABLE users ADD COLUMN dashboard_full_width BOOLEAN DEFAULT FALSE;
 ```
 
 Columns from the earlier migration `2026_10_21_202500_add_dashboard_preferences_to_users_table.php`:
@@ -86,6 +94,12 @@ Stored as a string: `'normal'`, `'small'`, or `'text'`
 ]
 ```
 
+#### Group Display Mode
+Stored as a string: `'tabs'` or `'accordion'`
+
+#### Application Width
+Stored as a boolean in `dashboard_full_width`. `false` uses the centered Bootstrap `container`; `true` removes that container class so authenticated pages use the available application width.
+
 ### API Routes
 
 #### Update Display Mode
@@ -95,6 +109,24 @@ Content-Type: application/json
 
 {
     "display_mode": "normal|small|text"
+}
+```
+
+#### Update Application Width
+```
+POST /dashboard/full-width
+Content-Type: application/json
+
+{
+    "full_width": true
+}
+```
+
+Response:
+```json
+{
+    "message": "Application width updated successfully.",
+    "full_width": true
 }
 ```
 
@@ -118,7 +150,8 @@ Content-Type: application/json
             "name": "Group Name",
             "application_ids": [1, 2, 3]
         }
-    ]
+    ],
+    "group_display_mode": "tabs|accordion"
 }
 ```
 
@@ -149,9 +182,13 @@ Located in the application card header, features radio buttons for:
 - Small (smaller grid icon)
 - Text (list icon)
 
+### Application Width Toggle
+Located beside the display mode controls in the application card header. It offers centered-container and full-width options and reloads the page after persisting a selection.
+
 ### Groups Management Modal
 Accessible via the "Groups" button in the application card header (`#groupsModal`):
 - Lists all current groups
+- Includes a "Group display style" toggle (Accordion/Tabs)
 - Group names are edited inline in each group card (`.group-name-input`)
 - Each group card has a trash button to delete the group
 - "Add New Group" button (`#add-group-btn`) creates a group named "New Group"
@@ -176,12 +213,14 @@ The "My Shortcuts" card on the dashboard lists shortcuts grouped by category.
    - Delete groups by clicking the trash icon
 6. Click "Save Groups" to persist all group changes
 7. Dashboard reloads to show newly organized applications
+8. Users can also drag application tiles directly inside grouped sections and click "Save Order" to persist grouped ordering and assignments
 
 ## Default Behavior
 
 - **Display Mode**: Defaults to "normal" if not set
 - **Groups**: Empty by default; applications are "ungrouped" until organized
 - **Drag and Drop**: Still works for reordering within groups or when ungrouped
+- **Application Width**: Defaults to the centered `container` layout
 
 ## Migration Path
 
@@ -227,6 +266,8 @@ Covered by `tests/Feature/UserDashboardPersonalizationTest.php`:
 - Display mode update
 - Group save, delete-all, delete-one, and inaccessible-app rejection
 - Dashboard view receives display mode and groups
+- Dashboard width preference persistence and shared-layout rendering
+- Profile display of the dashboard width preference
 
 Run with: `docker compose exec apptemplate php artisan test --filter=UserDashboardPersonalizationTest`
 

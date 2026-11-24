@@ -70,7 +70,7 @@ class RoleSeeder extends Seeder
             }
         }
 
-        $managerUser = User::firstWhere('net_id', 'manager01')->first();
+        $managerUser = User::firstWhere('net_id', 'manager01');
         if ($managerUser) {
             $libraryManagerRole = Role::firstWhere('name', 'library_manager');
             if ($libraryManagerRole) {
