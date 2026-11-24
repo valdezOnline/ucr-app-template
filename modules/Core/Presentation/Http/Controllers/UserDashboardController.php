@@ -210,6 +210,21 @@ class UserDashboardController extends Controller
     }
 
     /**
+     * Remove a dashboard shortcut for the authenticated user.
+     */
+    public function destroyShortcut(Request $request, string $shortcutId): RedirectResponse
+    {
+        $user = $request->user();
+        $shortcuts = collect($user->dashboard_shortcuts ?? [])
+            ->reject(fn(array $shortcut) => ($shortcut['id'] ?? null) === $shortcutId);
+
+        $user->dashboard_shortcuts = $shortcuts->values()->all();
+        $user->save();
+
+        return back()->with('success', 'Shortcut removed.');
+    }
+
+    /**
      * Update the user's dashboard display mode preference.
      */
     public function updateDisplayMode(Request $request): JsonResponse

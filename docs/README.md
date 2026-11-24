@@ -16,6 +16,9 @@ All project documentation is consolidated under this [docs/](./) folder.
 - [user-management.md](./user-management.md)  
   User management and HR integration workflows.
 
+- [dashboard-display-groups.md](./dashboard-display-groups.md)  
+  User dashboard display modes, application groups, and shortcuts.
+
 ## Architecture
 
 - [modular-architecture.md](./modular-architecture.md)  
@@ -28,6 +31,7 @@ All project documentation is consolidated under this [docs/](./) folder.
 3. [authentication-guide.md](./authentication-guide.md)
 4. [api-authentication-guide.md](./api-authentication-guide.md)
 5. [user-management.md](./user-management.md)
+6. [dashboard-display-groups.md](./dashboard-display-groups.md)
 
 ## Documentation Contribution Standard
 

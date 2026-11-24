@@ -120,7 +120,7 @@ A module should include the structure expected by the current project:
 ## 6) Testing and validation standards
 
 - Run the smallest relevant test suite for the changed behavior.
-- Prefer `php artisan test` for feature or unit validation. (Note: check co
+- Prefer `php artisan test` for feature or unit validation, run inside the Docker app container (for example `docker compose exec apptemplate php artisan test`).
 - For frontend changes, run the relevant Vite build or asset validation command when needed.
 - If a change alters a route, controller, auth flow, or module boundary, verify the corresponding behavior end-to-end or with focused tests.
 

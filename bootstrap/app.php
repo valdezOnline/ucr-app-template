@@ -23,7 +23,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.type' => \Modules\Core\Presentation\Http\Middleware\AuthenticationTypeMiddleware::class,
             'track.user.activity' => \Modules\Core\Presentation\Http\Middleware\TrackUserActivity::class,
-            'api.app.auth' => \Modules\Core\Presentation\Http\Middleware\ApiApplicationAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

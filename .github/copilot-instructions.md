@@ -81,33 +81,10 @@ Language Specific rules are in `.github/instructions/`:
 
 ## Do not
 
-- Do not introduce ad hoc auth or app logic outside the module-first architecture.
+- Do not introduce ad hoc auth or app logic outside the module-first architecture or bypass Core abstractions (`AuthenticationManager`, `ImpersonationManager`, Core service contracts).
+- Do not bypass module boundaries, create hidden or circular dependencies between modules, or add tight coupling.
 - Do not add unrelated refactors.
 - Do not leave docs or route examples inconsistent with the current architecture.
-- Do not introduce code that bypasses established Core abstractions.
 - Do not add tests that do not follow the module-first structure.
-- Do not introduce code that violates established error handling practices.
-- Do not bypass module boundaries or Core abstractions for convenience.
-- Do not introduce code that creates hidden dependencies between modules.
-- Do not circumvent established validation and testing practices.
-- Do not introduce code that conflicts with existing module-first architecture conventions.
-- Do not introduce code that bypasses established Core service contracts.
-- Do not introduce code that violates the module-first architecture principles.
-- Do not introduce code that creates tight coupling between modules.
-- Do not introduce code that bypasses established module boundaries.
-- Do not introduce code that violates the separation of concerns between modules.
-- Do not introduce code that creates circular dependencies between modules.
-- Do not introduce code that violates established module dependency rules.
-- Do not introduce code that creates hidden dependencies on external packages or services.
-- Do not introduce code that violates established module initialization and bootstrapping procedures.
-- Do not introduce code that bypasses established module configuration settings.
-- Do not introduce code that violates established module configuration conventions.
-- Do not introduce code that bypasses established module initialization procedures.
-- Do not introduce code that violates established module lifecycle hooks.
-- Do not introduce code that bypasses established module dependency injection practices.
-- Do not introduce code that violates established module service contracts.
-- Do not introduce code that bypasses established module event handling mechanisms.
-- Do not introduce code that violates established module event handling practices.
-- Do not introduce code that bypasses established module logging mechanisms.
-- Do not introduce code that bypasses established module caching mechanisms.
-- Do not introduce code that violates established module caching practices.
+- Do not circumvent established validation, error handling, logging, caching, or testing practices.
+- Do not add hidden dependencies on external packages or services.

@@ -16,8 +16,8 @@ Users can choose from three display modes for application tiles:
 - Best for discovering new applications
 
 #### Small Tile
-- Displays only application icon and name
-- Takes up 20% of the width (5 tiles per row)
+- Displays application icon, name, and a launch button
+- Takes up 20% of the width (5 tiles per row on large screens)
 - Best for users who already know their applications
 
 #### Text Only
@@ -37,13 +37,33 @@ Users can organize applications into custom groups:
 
 ### Database Schema
 
-Three new columns added to the `users` table:
+Migration: `database/migrations/2026_11_19_000000_add_dashboard_display_mode_to_users_table.php`
+
+Columns added to the `users` table:
 
 ```sql
 ALTER TABLE users ADD COLUMN dashboard_display_mode ENUM('normal', 'small', 'text') DEFAULT 'normal';
-ALTER TABLE users ADD COLUMN dashboard_groups JSON;
-ALTER TABLE users ADD COLUMN dashboard_application_groups JSON;
+ALTER TABLE users ADD COLUMN dashboard_groups JSON NULL;
+ALTER TABLE users ADD COLUMN dashboard_application_groups JSON NULL;
 ```
+
+Columns from the earlier migration `2026_10_21_202500_add_dashboard_preferences_to_users_table.php`:
+`dashboard_application_order` and `dashboard_shortcuts`.
+
+> **Known gap:** `dashboard_application_groups` is declared in the model and migration but is not read or written by any controller or view. Groups are stored in `dashboard_groups`. Remove the column in a future migration once confirmed unused.
+
+### Shortcuts and Application Order
+
+Shortcuts are stored in `dashboard_shortcuts` and managed through these routes (all `auth` + `auth.type`):
+
+| Method | Route | Action |
+|---|---|---|
+| POST | `/dashboard/shortcuts` | `storeShortcut` |
+| PUT | `/dashboard/shortcuts/{shortcutId}` | `updateShortcut` |
+| DELETE | `/dashboard/shortcuts/{shortcutId}` | `destroyShortcut` |
+| POST | `/dashboard/applications/order` | `saveApplicationOrder` (only visible applications accepted) |
+
+Internal shortcuts must be paths (for example `/profile`). External shortcuts must be full URLs.
 
 ### Data Storage Format
 
@@ -130,13 +150,18 @@ Located in the application card header, features radio buttons for:
 - Text (list icon)
 
 ### Groups Management Modal
-Accessible via the "Groups" button in the application card header:
+Accessible via the "Groups" button in the application card header (`#groupsModal`):
 - Lists all current groups
-- Shows associated applications for each group
-- Allows editing group names
-- Allows adding/removing applications from groups
-- "Add New Group" button to create new groups
-- "Save Groups" button to persist changes
+- Group names are edited inline in each group card (`.group-name-input`)
+- Each group card has a trash button to delete the group
+- "Add New Group" button (`#add-group-btn`) creates a group named "New Group"
+- "Save Groups" button (`#save-groups-btn`) persists changes
+
+### Shortcuts Panel
+The "My Shortcuts" card on the dashboard lists shortcuts grouped by category.
+- "Add Shortcut" opens `#shortcutModal` to create a shortcut (name, link type, URL or path, optional category)
+- Each shortcut has edit and remove actions. Remove submits a `DELETE` form to `/dashboard/shortcuts/{id}`
+- Categories are suggested from existing shortcuts via a datalist
 
 ## User Flow
 
@@ -189,8 +214,22 @@ All settings are stored in the authenticated user's profile:
 - Automatically loaded on dashboard view
 - Updated via AJAX requests (no page reload required)
 
-## Migration File
+## Migration and Rollback
 
-Location: `database/migrations/2026_11_19_000000_add_dashboard_display_mode_to_users_table.php`
+Apply with `php artisan migrate`. Roll back with `php artisan migrate:rollback`. The migration drops only the columns it adds (`dashboard_display_mode`, `dashboard_groups`, `dashboard_application_groups`). Existing user data in other columns is preserved.
 
-Creates the three new columns with proper NULL handling and reversibility.
+## Tests
+
+Covered by `tests/Feature/UserDashboardPersonalizationTest.php`:
+
+- Application order saved for visible apps only
+- Shortcut add, update, and remove
+- Display mode update
+- Group save, delete-all, delete-one, and inaccessible-app rejection
+- Dashboard view receives display mode and groups
+
+Run with: `docker compose exec apptemplate php artisan test --filter=UserDashboardPersonalizationTest`
+
+## Historical Notes
+
+- The display mode toggle initially updated only a CSS class, which did not change tile markup. The toggle now reloads the page after a successful save so the server re-renders the tiles with the new mode.

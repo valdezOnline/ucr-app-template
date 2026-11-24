@@ -2,7 +2,7 @@
 
 This repository is a Laravel application migrated to a modular architecture with `Core` as the base module.
 
-All documentation is consolidated under [docs/](/home/sudo-joelv/dev-drive/my-sandbox/app-template/docs).
+All documentation is consolidated under [docs/](./docs/README.md).
 
 ## Start Here
 
