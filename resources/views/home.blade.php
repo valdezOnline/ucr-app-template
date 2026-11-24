@@ -260,30 +260,49 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    @if ($onlineUsers->isNotEmpty())
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Current Active Users</h5>
-                        <span class="badge bg-success">{{ $onlineUsers->count() }} online</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="list-group list-group-flush">
-                            @foreach ($onlineUsers as $onlineUser)
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong>{{ $onlineUser->full_name ?: $onlineUser->name }}</strong>
-                                        <div class="text-muted small">{{ $onlineUser->email }}</div>
+                    @if ($onlineUsers->total() > 0)
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                                <h5 class="mb-0">Current Online Users</h5>
+                                <span class="badge bg-success">{{ $onlineUsers->total() }} online</span>
+                            </div>
+                            <div class="card-body">
+                                <form method="GET" action="{{ route('home') }}" class="mb-3">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-12">
+                                            <label for="online_users_per_page" class="form-label mb-1">Records per page</label>
+                                            <select id="online_users_per_page" name="online_users_per_page"
+                                                class="form-select form-select-sm" onchange="this.form.submit()">
+                                                @foreach ([10, 25, 50, 100] as $option)
+                                                    <option value="{{ $option }}"
+                                                        @selected((int) $onlineUsersPerPage === $option)>
+                                                        {{ $option }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div class="text-end text-muted small">
-                                        <div>Last seen</div>
-                                        <div>{{ $onlineUser->last_seen_at?->diffForHumans() ?? 'Unknown' }}</div>
-                                    </div>
+                                </form>
+                                <div class="list-group list-group-flush">
+                                    @foreach ($onlineUsers as $onlineUser)
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ $onlineUser->full_name ?: $onlineUser->name }}</strong>
+                                                <div class="text-muted small">{{ $onlineUser->email }}</div>
+                                            </div>
+                                            <div class="text-end text-muted small">
+                                                <div>Last seen</div>
+                                                <div>{{ $onlineUser->last_seen_at?->diffForHumans() ?? 'Unknown' }}</div>
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
-                            @endforeach
+                                <div class="mt-3">
+                                    {{ $onlineUsers->onEachSide(1)->links('pagination::bootstrap-5') }}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            @endif                        
+                    @endif
                 </div>
             </div>
         </div>

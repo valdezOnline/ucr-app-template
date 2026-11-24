@@ -31,13 +31,23 @@ class HomeController extends Controller
     {
         $user = auth()->user();
 
-        $onlineUsers = \Modules\Core\Models\User::online()->orderByDesc('last_seen_at')->get();
+        $onlineUsersQuery = \Modules\Core\Models\User::online()->orderByDesc('last_seen_at');
+        $onlineUsersPerPage = (int) request()->integer('online_users_per_page', 10);
+        $allowedPerPageOptions = [10, 25, 50, 100];
+
+        if (!in_array($onlineUsersPerPage, $allowedPerPageOptions, true)) {
+            $onlineUsersPerPage = 10;
+        }
+
+        $onlineUsers = (clone $onlineUsersQuery)
+            ->paginate($onlineUsersPerPage)
+            ->withQueryString();
 
         $stats = [
             'total_users' => \Modules\Core\Models\User::count(),
             'active_users' => \Modules\Core\Models\User::where('is_active', true)->count(),
             'inactive_users' => \Modules\Core\Models\User::where('is_active', false)->count(),
-            'online_users' => $onlineUsers->count(),
+            'online_users' => (clone $onlineUsersQuery)->count(),
             'admin_users' => \Modules\Core\Models\User::withRole('admin')->count(),
             'manager_users' => \Modules\Core\Models\User::withRole('manager')->count(),
             'supervisor_users' => \Modules\Core\Models\User::withRole('supervisor')->count(),
@@ -50,6 +60,6 @@ class HomeController extends Controller
         // Get applications user has access to
         $userApplications = \Modules\Core\Models\Application::visibleToUser($user)->get();
 
-        return view('home', compact('stats', 'userApplications', 'onlineUsers'));
+        return view('home', compact('stats', 'userApplications', 'onlineUsers', 'onlineUsersPerPage'));
     }
 }

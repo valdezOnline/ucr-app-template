@@ -125,7 +125,7 @@ The application records the following activity data for each authenticated user:
 - `last_login_at`, `last_logout_at`, and `last_seen_at` timestamps on the `users` table
 - a `user_activities` audit log with the session ID, IP address, user agent, and metadata
 
-These values can be queried from the `users` table and `user_activities` table to build dashboards for current active users and recent sign-in history.
+These values can be queried from the `users` table and `user_activities` table to build dashboards for current online users and recent sign-in history.
 
 ## Blade Directives
 
