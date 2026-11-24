@@ -107,6 +107,25 @@ class UserDashboardPersonalizationTest extends TestCase
         $this->assertNotEmpty($shortcuts[0]['id']);
     }
 
+    public function test_user_can_set_shortcut_category_group_style_when_creating_shortcut(): void
+    {
+        $user = User::factory()->create(['dashboard_shortcut_group_display_mode' => 'list']);
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->post(route('dashboard.shortcuts.store'), [
+                'name' => 'Reports',
+                'type' => 'internal',
+                'url' => '/reports',
+                'category' => 'Daily',
+                'shortcut_group_display_mode' => 'nav-pills',
+                '_token' => 'test-token',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('nav-pills', $user->refresh()->dashboard_shortcut_group_display_mode);
+    }
+
     public function test_user_can_update_shortcut(): void
     {
         $user = User::factory()->create([
@@ -411,6 +430,23 @@ class UserDashboardPersonalizationTest extends TestCase
         $response->assertSee('id="application-groups-accordion"', false);
         $response->assertSee('id="groupDisplayModeAccordion"', false);
         $response->assertDontSee('id="application-group-tabs"', false);
+    }
+
+    public function test_dashboard_view_shows_shortcut_nav_pills_when_selected(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_shortcut_group_display_mode' => 'nav-pills',
+            'dashboard_shortcuts' => [
+                ['id' => 'shortcut-1', 'name' => 'Profile', 'type' => 'internal', 'url' => '/profile', 'category' => 'Daily'],
+                ['id' => 'shortcut-2', 'name' => 'Help', 'type' => 'internal', 'url' => '/help', 'category' => 'Support'],
+            ],
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk();
+        $response->assertSee('id="shortcut-category-pills"', false);
+        $response->assertSee('data-bs-toggle="pill"', false);
     }
 
     public function test_user_can_toggle_dashboard_lock(): void

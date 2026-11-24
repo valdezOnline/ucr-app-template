@@ -48,6 +48,7 @@ class UserDashboardController extends Controller
         $displayMode = $user->dashboard_display_mode ?? 'normal';
         $userGroups = $user->dashboard_groups ?? [];
         $groupDisplayMode = $user->dashboard_group_display_mode ?? 'accordion';
+        $shortcutGroupDisplayMode = $user->dashboard_shortcut_group_display_mode ?? 'list';
         $dashboardFullWidth = (bool) ($user->dashboard_full_width ?? false);
 
         $shortcuts = collect($user->dashboard_shortcuts ?? [])
@@ -94,6 +95,7 @@ class UserDashboardController extends Controller
             'displayMode',
             'userGroups',
             'groupDisplayMode',
+            'shortcutGroupDisplayMode',
             'dashboardFullWidth',
             'shortcutsByCategory',
             'shortcutCategories'
@@ -174,6 +176,7 @@ class UserDashboardController extends Controller
             'type' => ['required', Rule::in(['internal', 'external'])],
             'url' => ['required', 'string', 'max:2048'],
             'category' => ['nullable', 'string', 'max:80'],
+            'shortcut_group_display_mode' => ['nullable', Rule::in(['list', 'nav-pills'])],
         ]);
 
         try {
@@ -195,6 +198,8 @@ class UserDashboardController extends Controller
         ]);
 
         $user->dashboard_shortcuts = $shortcuts->values()->all();
+        $user->dashboard_shortcut_group_display_mode = $validated['shortcut_group_display_mode']
+            ?? ($user->dashboard_shortcut_group_display_mode ?? 'list');
         $user->save();
 
         return back()->with('success', 'Shortcut added to My Shortcuts.');
@@ -210,6 +215,7 @@ class UserDashboardController extends Controller
             'type' => ['required', Rule::in(['internal', 'external'])],
             'url' => ['required', 'string', 'max:2048'],
             'category' => ['nullable', 'string', 'max:80'],
+            'shortcut_group_display_mode' => ['nullable', Rule::in(['list', 'nav-pills'])],
         ]);
 
         try {
@@ -237,6 +243,8 @@ class UserDashboardController extends Controller
         });
 
         $user->dashboard_shortcuts = $shortcuts->values()->all();
+        $user->dashboard_shortcut_group_display_mode = $validated['shortcut_group_display_mode']
+            ?? ($user->dashboard_shortcut_group_display_mode ?? 'list');
         $user->save();
 
         return back()->with('success', 'Shortcut updated.');

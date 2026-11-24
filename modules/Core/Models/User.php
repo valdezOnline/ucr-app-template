@@ -42,6 +42,7 @@ class User extends Authenticatable
         'last_seen_at',
         'dashboard_application_order',
         'dashboard_shortcuts',
+        'dashboard_shortcut_group_display_mode',
         'dashboard_display_mode',
         'dashboard_groups',
         'dashboard_group_display_mode',

@@ -53,6 +53,7 @@ ALTER TABLE users ADD COLUMN dashboard_groups JSON NULL;
 ALTER TABLE users ADD COLUMN dashboard_application_groups JSON NULL;
 ALTER TABLE users ADD COLUMN dashboard_group_display_mode ENUM('tabs', 'accordion') DEFAULT 'accordion';
 ALTER TABLE users ADD COLUMN dashboard_full_width BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN dashboard_shortcut_group_display_mode ENUM('list', 'nav-pills') DEFAULT 'list';
 ```
 
 Columns from the earlier migration `2026_10_21_202500_add_dashboard_preferences_to_users_table.php`:
@@ -72,6 +73,7 @@ Shortcuts are stored in `dashboard_shortcuts` and managed through these routes (
 | POST | `/dashboard/applications/order` | `saveApplicationOrder` (only visible applications accepted) |
 
 Internal shortcuts must be paths (for example `/profile`). External shortcuts must be full URLs.
+When creating or editing a shortcut, users can also set `shortcut_group_display_mode` to `list` or `nav-pills` to control categorized shortcut rendering.
 
 ### Data Storage Format
 
@@ -99,6 +101,9 @@ Stored as a string: `'tabs'` or `'accordion'`
 
 #### Application Width
 Stored as a boolean in `dashboard_full_width`. `false` uses the centered Bootstrap `container`; `true` removes that container class so authenticated pages use the available application width.
+
+#### Shortcut Category Group Style
+Stored as a string in `dashboard_shortcut_group_display_mode`: `'list'` or `'nav-pills'`.
 
 ### API Routes
 
@@ -197,6 +202,7 @@ Accessible via the "Groups" button in the application card header (`#groupsModal
 ### Shortcuts Panel
 The "My Shortcuts" card on the dashboard lists shortcuts grouped by category.
 - "Add Shortcut" opens `#shortcutModal` to create a shortcut (name, link type, URL or path, optional category)
+- The shortcut modal includes a category group style selector (List or Nav pills) for categorized shortcut rendering
 - Each shortcut has edit and remove actions. Remove submits a `DELETE` form to `/dashboard/shortcuts/{id}`
 - Categories are suggested from existing shortcuts via a datalist
 

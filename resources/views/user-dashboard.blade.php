@@ -208,51 +208,116 @@
                                         <p class="mb-0">No shortcuts yet. Add links you use often.</p>
                                     </div>
                                 @else
-                                    @foreach ($shortcutsByCategory as $category => $shortcuts)
-                                        <div class="shortcut-category-group mb-3">
-                                            <h6 class="shortcut-category-title">{{ $category }}</h6>
-                                            <ul class="list-group list-group-flush shortcut-list">
-                                                @foreach ($shortcuts as $shortcut)
-                                                    <li
-                                                        class="list-group-item px-0 d-flex justify-content-between align-items-start">
-                                                        <a href="{{ $shortcut['url'] }}"
-                                                            @if ($shortcut['type'] === 'external') target="_blank" rel="noopener noreferrer" @endif
-                                                            class="shortcut-link">
-                                                            {{ $shortcut['name'] }}
-                                                            @if ($shortcut['type'] === 'external')
-                                                                <i
-                                                                    class="fas fa-external-link-alt ms-1 small text-muted"></i>
-                                                            @endif
-                                                        </a>
-                                                        <div class="shortcut-actions d-flex align-items-center">
-                                                            <button type="button"
-                                                                class="btn btn-link btn-sm text-primary p-0 me-2 edit-shortcut-btn"
-                                                                data-shortcut-id="{{ $shortcut['id'] }}"
-                                                                data-shortcut-name="{{ $shortcut['name'] }}"
-                                                                data-shortcut-type="{{ $shortcut['type'] }}"
-                                                                data-shortcut-url="{{ $shortcut['url'] }}"
-                                                                data-shortcut-category="{{ $shortcut['category'] ?? '' }}"
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#shortcutModal"
-                                                                aria-label="Edit shortcut {{ $shortcut['name'] }}">
-                                                                <i class="fas fa-edit"></i>
-                                                            </button>
-                                                            <form method="POST"
-                                                                action="{{ route('dashboard.shortcuts.destroy', $shortcut['id']) }}">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button type="submit"
-                                                                    class="btn btn-link btn-sm text-danger p-0"
-                                                                    aria-label="Remove shortcut {{ $shortcut['name'] }}">
-                                                                    <i class="fas fa-trash-alt"></i>
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </li>
-                                                @endforeach
-                                            </ul>
+                                    @if ($shortcutGroupDisplayMode === 'nav-pills')
+                                        <ul class="nav nav-pills nav-fill gap-2 mb-3" id="shortcut-category-pills" role="tablist">
+                                            @foreach ($shortcutsByCategory as $category => $shortcuts)
+                                                @php
+                                                    $categoryTabId = 'shortcut-tab-' . \Illuminate\Support\Str::slug($category, '-') . '-' . $loop->index;
+                                                    $categoryPaneId = 'shortcut-pane-' . \Illuminate\Support\Str::slug($category, '-') . '-' . $loop->index;
+                                                @endphp
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link @if ($loop->first) active @endif" id="{{ $categoryTabId }}"
+                                                        data-bs-toggle="pill" data-bs-target="#{{ $categoryPaneId }}" type="button"
+                                                        role="tab" aria-controls="{{ $categoryPaneId }}"
+                                                        aria-selected="@if ($loop->first) true @else false @endif">
+                                                        {{ $category }}
+                                                    </button>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                        <div class="tab-content" id="shortcut-category-content">
+                                            @foreach ($shortcutsByCategory as $category => $shortcuts)
+                                                @php
+                                                    $categoryTabId = 'shortcut-tab-' . \Illuminate\Support\Str::slug($category, '-') . '-' . $loop->index;
+                                                    $categoryPaneId = 'shortcut-pane-' . \Illuminate\Support\Str::slug($category, '-') . '-' . $loop->index;
+                                                @endphp
+                                                <div class="tab-pane fade @if ($loop->first) show active @endif"
+                                                    id="{{ $categoryPaneId }}" role="tabpanel"
+                                                    aria-labelledby="{{ $categoryTabId }}" tabindex="0">
+                                                    <ul class="list-group list-group-flush shortcut-list">
+                                                        @foreach ($shortcuts as $shortcut)
+                                                            <li class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                                                                <a href="{{ $shortcut['url'] }}"
+                                                                    @if ($shortcut['type'] === 'external') target="_blank" rel="noopener noreferrer" @endif
+                                                                    class="shortcut-link">
+                                                                    {{ $shortcut['name'] }}
+                                                                    @if ($shortcut['type'] === 'external')
+                                                                        <i class="fas fa-external-link-alt ms-1 small text-muted"></i>
+                                                                    @endif
+                                                                </a>
+                                                                <div class="shortcut-actions d-flex align-items-center">
+                                                                    <button type="button"
+                                                                        class="btn btn-link btn-sm text-primary p-0 me-2 edit-shortcut-btn"
+                                                                        data-shortcut-id="{{ $shortcut['id'] }}"
+                                                                        data-shortcut-name="{{ $shortcut['name'] }}"
+                                                                        data-shortcut-type="{{ $shortcut['type'] }}"
+                                                                        data-shortcut-url="{{ $shortcut['url'] }}"
+                                                                        data-shortcut-category="{{ $shortcut['category'] ?? '' }}"
+                                                                        data-bs-toggle="modal"
+                                                                        data-bs-target="#shortcutModal"
+                                                                        aria-label="Edit shortcut {{ $shortcut['name'] }}">
+                                                                        <i class="fas fa-edit"></i>
+                                                                    </button>
+                                                                    <form method="POST"
+                                                                        action="{{ route('dashboard.shortcuts.destroy', $shortcut['id']) }}">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-link btn-sm text-danger p-0"
+                                                                            aria-label="Remove shortcut {{ $shortcut['name'] }}">
+                                                                            <i class="fas fa-trash-alt"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                </div>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                </div>
+                                            @endforeach
                                         </div>
-                                    @endforeach
+                                    @else
+                                        @foreach ($shortcutsByCategory as $category => $shortcuts)
+                                            <div class="shortcut-category-group mb-3">
+                                                <h6 class="shortcut-category-title">{{ $category }}</h6>
+                                                <ul class="list-group list-group-flush shortcut-list">
+                                                    @foreach ($shortcuts as $shortcut)
+                                                        <li class="list-group-item px-0 d-flex justify-content-between align-items-start">
+                                                            <a href="{{ $shortcut['url'] }}"
+                                                                @if ($shortcut['type'] === 'external') target="_blank" rel="noopener noreferrer" @endif
+                                                                class="shortcut-link">
+                                                                {{ $shortcut['name'] }}
+                                                                @if ($shortcut['type'] === 'external')
+                                                                    <i class="fas fa-external-link-alt ms-1 small text-muted"></i>
+                                                                @endif
+                                                            </a>
+                                                            <div class="shortcut-actions d-flex align-items-center">
+                                                                <button type="button"
+                                                                    class="btn btn-link btn-sm text-primary p-0 me-2 edit-shortcut-btn"
+                                                                    data-shortcut-id="{{ $shortcut['id'] }}"
+                                                                    data-shortcut-name="{{ $shortcut['name'] }}"
+                                                                    data-shortcut-type="{{ $shortcut['type'] }}"
+                                                                    data-shortcut-url="{{ $shortcut['url'] }}"
+                                                                    data-shortcut-category="{{ $shortcut['category'] ?? '' }}"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#shortcutModal"
+                                                                    aria-label="Edit shortcut {{ $shortcut['name'] }}">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                                <form method="POST"
+                                                                    action="{{ route('dashboard.shortcuts.destroy', $shortcut['id']) }}">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-link btn-sm text-danger p-0"
+                                                                        aria-label="Remove shortcut {{ $shortcut['name'] }}">
+                                                                        <i class="fas fa-trash-alt"></i>
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        @endforeach
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -390,6 +455,25 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
+
+                        <div class="mb-0">
+                            <label for="shortcut-group-display-mode" class="form-label">Category Group Style</label>
+                            <select id="shortcut-group-display-mode" name="shortcut_group_display_mode"
+                                class="form-select @error('shortcut_group_display_mode') is-invalid @enderror">
+                                <option value="list"
+                                    @selected(old('shortcut_group_display_mode', $shortcutGroupDisplayMode) === 'list')>
+                                    List
+                                </option>
+                                <option value="nav-pills"
+                                    @selected(old('shortcut_group_display_mode', $shortcutGroupDisplayMode) === 'nav-pills')>
+                                    Nav pills
+                                </option>
+                            </select>
+                            <div class="form-text">Used when shortcuts are categorized.</div>
+                            @error('shortcut_group_display_mode')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-between align-items-center">
                         <button type="submit" class="btn btn-outline-danger d-none" id="shortcutDeleteButton"
@@ -522,6 +606,18 @@
 
         .shortcut-link:hover {
             text-decoration: underline;
+        }
+
+        #shortcut-category-pills .nav-link {
+            font-size: 0.85rem;
+            border: 1px solid var(--bs-primary);
+            color: var(--bs-primary);
+            background-color: transparent;
+        }
+
+        #shortcut-category-pills .nav-link.active {
+            color: #fff;
+            background-color: var(--bs-primary);
         }
 
         .card-title {
@@ -748,6 +844,8 @@
             const shortcutTypeInput = document.getElementById('shortcut-type');
             const shortcutUrlInput = document.getElementById('shortcut-url');
             const shortcutCategoryInput = document.getElementById('shortcut-category');
+            const shortcutGroupDisplayModeInput = document.getElementById('shortcut-group-display-mode');
+            const defaultShortcutGroupDisplayMode = @json($shortcutGroupDisplayMode);
             const createShortcutButton = document.querySelector('[data-bs-target="#shortcutModal"]');
 
             // Auto-prefix external URLs with https:// if missing
@@ -776,6 +874,9 @@
                 shortcutTypeInput.value = 'internal';
                 shortcutUrlInput.value = '';
                 shortcutCategoryInput.value = '';
+                if (shortcutGroupDisplayModeInput) {
+                    shortcutGroupDisplayModeInput.value = defaultShortcutGroupDisplayMode;
+                }
                 if (shortcutDeleteForm && shortcutDeleteButton) {
                     shortcutDeleteForm.action = '';
                     shortcutDeleteButton.classList.add('d-none');
