@@ -3,6 +3,7 @@
 ## Overview
 
 The dashboard now supports three display modes for application tiles, centered or full-width application layouts, and custom application groups.
+It also supports exporting and importing dashboard personalization settings as a JSON file.
 
 ## Features
 
@@ -38,6 +39,14 @@ Users can organize applications into custom groups:
 ### 3. Application Width
 
 Users can choose between the standard centered `container` layout and a full-width layout from the application card header. The preference is stored on the authenticated user's profile and applies to pages using the shared application layout. The default remains the centered container layout.
+
+### 4. Personalization Export and Import
+
+Users can:
+- Export current dashboard personalization settings (display mode, width, app order, groups, and shortcuts) as a JSON file.
+- Import that JSON file later to restore those settings.
+
+Imported settings are validated against the authenticated user's visible applications. If the file contains inaccessible application IDs, import is rejected with an error.
 
 ## Implementation Details
 
@@ -167,6 +176,23 @@ Response:
 }
 ```
 
+#### Export Personalization
+```
+GET /dashboard/personalization/export
+```
+
+Returns a JSON file download with type `ucr-dashboard-personalization` and version `1`.
+
+#### Import Personalization
+```
+POST /dashboard/personalization/import
+Content-Type: multipart/form-data
+
+personalization_file=<json file>
+```
+
+Response redirects back to the dashboard with a success flash message when import is valid.
+
 #### Delete Application Group
 ```
 DELETE /dashboard/applications/groups/{groupId}
@@ -274,6 +300,8 @@ Covered by `tests/Feature/UserDashboardPersonalizationTest.php`:
 - Dashboard view receives display mode and groups
 - Dashboard width preference persistence and shared-layout rendering
 - Profile display of the dashboard width preference
+- Personalization export file structure
+- Personalization import success path and invalid JSON rejection
 
 Run with: `docker compose exec apptemplate php artisan test --filter=UserDashboardPersonalizationTest`
 

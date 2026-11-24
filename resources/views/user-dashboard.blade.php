@@ -18,6 +18,12 @@
                 </div>
             @endif
 
+            @if ($errors->has('personalization_file'))
+                <div class="alert alert-danger" role="alert">
+                    {{ $errors->first('personalization_file') }}
+                </div>
+            @endif
+
             <div class="row">
                 <div class="col-md-8">
                     <div class="card h-100">
@@ -78,6 +84,14 @@
                                     data-bs-target="#groupsModal">
                                     <i class="fas fa-folder me-1"></i>Groups
                                 </button>
+                                <a href="{{ route('dashboard.personalization.export') }}"
+                                    class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-file-export me-1"></i>Export
+                                </a>
+                                <button type="button" id="import-dashboard-personalization"
+                                    class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-file-import me-1"></i>Import
+                                </button>
                                 <button type="button" id="save-application-order"
                                     class="btn btn-primary btn-sm d-none">
                                     <i class="fas fa-save me-1"></i>Save Order
@@ -85,6 +99,17 @@
                             </div>
                         </div>
                         <div class="card-body">
+                            <form id="dashboard-personalization-import-form"
+                                action="{{ route('dashboard.personalization.import') }}"
+                                method="POST"
+                                enctype="multipart/form-data"
+                                class="d-none">
+                                @csrf
+                                <input type="file"
+                                    id="dashboard-personalization-file"
+                                    name="personalization_file"
+                                    accept=".json,application/json,text/plain">
+                            </form>
                             @if ($userApplications->count() > 0)
                                 <div id="applications-container" class="applications-display-{{ $displayMode }}">
                                     @php
@@ -633,6 +658,23 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const importPersonalizationButton = document.getElementById('import-dashboard-personalization');
+            const importPersonalizationForm = document.getElementById('dashboard-personalization-import-form');
+            const importPersonalizationInput = document.getElementById('dashboard-personalization-file');
+
+            if (importPersonalizationButton && importPersonalizationForm && importPersonalizationInput) {
+                importPersonalizationButton.addEventListener('click', () => {
+                    importPersonalizationInput.click();
+                });
+
+                importPersonalizationInput.addEventListener('change', () => {
+                    if (!importPersonalizationInput.files || importPersonalizationInput.files.length === 0) {
+                        return;
+                    }
+
+                    importPersonalizationForm.submit();
+                });
+            }
 
             const dashboardWidthToggles = document.querySelectorAll('.dashboard-width-toggle');
             dashboardWidthToggles.forEach(toggle => {

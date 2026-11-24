@@ -49,6 +49,8 @@ Route::post('/dashboard/applications/order', [UserDashboardController::class, 's
 Route::post('/dashboard/lock', [UserDashboardController::class, 'toggleDashboardLock'])->name('dashboard.lock.toggle')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/display-mode', [UserDashboardController::class, 'updateDisplayMode'])->name('dashboard.display-mode.update')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/full-width', [UserDashboardController::class, 'updateFullWidth'])->name('dashboard.full-width.update')->middleware(['auth', 'auth.type']);
+Route::get('/dashboard/personalization/export', [UserDashboardController::class, 'exportPersonalization'])->name('dashboard.personalization.export')->middleware(['auth', 'auth.type']);
+Route::post('/dashboard/personalization/import', [UserDashboardController::class, 'importPersonalization'])->name('dashboard.personalization.import')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/applications/groups', [UserDashboardController::class, 'saveApplicationGroups'])->name('dashboard.applications.groups.save')->middleware(['auth', 'auth.type']);
 Route::delete('/dashboard/applications/groups/{groupId}', [UserDashboardController::class, 'deleteApplicationGroup'])->name('dashboard.applications.groups.delete')->middleware(['auth', 'auth.type']);
 Route::post('/dashboard/shortcuts', [UserDashboardController::class, 'storeShortcut'])->name('dashboard.shortcuts.store')->middleware(['auth', 'auth.type']);

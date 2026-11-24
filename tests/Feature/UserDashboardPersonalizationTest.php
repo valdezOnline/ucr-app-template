@@ -6,6 +6,7 @@ use Modules\Core\Models\Application;
 use Modules\Core\Models\Role;
 use Modules\Core\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class UserDashboardPersonalizationTest extends TestCase
@@ -493,6 +494,132 @@ class UserDashboardPersonalizationTest extends TestCase
         $response = $this->actingAs($user)->get(route('dashboard'));
         $response->assertOk();
         $response->assertSee('let isDashboardLocked = true;', false);
+    }
+
+    public function test_user_can_export_dashboard_personalization_file(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_display_mode' => 'small',
+            'dashboard_full_width' => true,
+            'dashboard_application_order' => [5, 3, 1],
+            'dashboard_groups' => [
+                ['id' => 'group-1', 'name' => 'Favorites', 'application_ids' => [5, 3]],
+            ],
+            'dashboard_group_display_mode' => 'tabs',
+            'dashboard_shortcuts' => [
+                ['id' => 'shortcut-1', 'name' => 'Profile', 'type' => 'internal', 'url' => '/profile', 'category' => 'Daily'],
+            ],
+            'dashboard_shortcut_group_display_mode' => 'nav-pills',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard.personalization.export'));
+
+        $response->assertOk();
+        $response->assertHeader('content-disposition');
+
+        $payload = json_decode($response->streamedContent(), true);
+
+        $this->assertIsArray($payload);
+        $this->assertSame('ucr-dashboard-personalization', $payload['type']);
+        $this->assertSame(1, $payload['version']);
+        $this->assertSame('small', $payload['preferences']['display_mode']);
+        $this->assertTrue($payload['preferences']['full_width']);
+        $this->assertSame([5, 3, 1], $payload['preferences']['application_order']);
+        $this->assertSame('tabs', $payload['preferences']['group_display_mode']);
+        $this->assertSame('nav-pills', $payload['preferences']['shortcut_group_display_mode']);
+    }
+
+    public function test_user_can_import_dashboard_personalization_file(): void
+    {
+        $user = User::factory()->create([
+            'dashboard_display_mode' => 'normal',
+            'dashboard_full_width' => false,
+        ]);
+        $role = Role::create([
+            'name' => 'staff',
+            'display_name' => 'Staff',
+            'is_active' => true,
+        ]);
+        $applications = collect([
+            Application::create(['name' => 'One', 'url' => 'https://one.example.com', 'is_active' => true]),
+            Application::create(['name' => 'Two', 'url' => 'https://two.example.com', 'is_active' => true]),
+            Application::create(['name' => 'Three', 'url' => 'https://three.example.com', 'is_active' => true]),
+        ]);
+        $user->roles()->attach($role->id);
+        $role->applications()->attach($applications->pluck('id')->all());
+
+        $importPayload = [
+            'type' => 'ucr-dashboard-personalization',
+            'version' => 1,
+            'preferences' => [
+                'display_mode' => 'text',
+                'full_width' => true,
+                'application_order' => [$applications[2]->id, $applications[0]->id],
+                'groups' => [
+                    [
+                        'id' => 'group-1',
+                        'name' => 'Core Tools',
+                        'application_ids' => [$applications[2]->id],
+                    ],
+                ],
+                'group_display_mode' => 'accordion',
+                'shortcuts' => [
+                    [
+                        'id' => 'shortcut-1',
+                        'name' => 'My Profile',
+                        'type' => 'internal',
+                        'url' => 'profile',
+                        'category' => 'daily',
+                    ],
+                ],
+                'shortcut_group_display_mode' => 'list',
+            ],
+        ];
+
+        $importFile = UploadedFile::fake()->createWithContent(
+            'dashboard-personalization.json',
+            json_encode($importPayload, JSON_THROW_ON_ERROR)
+        );
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->post(route('dashboard.personalization.import'), [
+                '_token' => 'test-token',
+                'personalization_file' => $importFile,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Dashboard personalization imported successfully.');
+
+        $updatedUser = $user->refresh();
+        $this->assertSame('text', $updatedUser->dashboard_display_mode);
+        $this->assertTrue($updatedUser->dashboard_full_width);
+        $this->assertSame(
+            [$applications[2]->id, $applications[0]->id, $applications[1]->id],
+            $updatedUser->dashboard_application_order
+        );
+        $this->assertSame('accordion', $updatedUser->dashboard_group_display_mode);
+        $this->assertSame('list', $updatedUser->dashboard_shortcut_group_display_mode);
+        $this->assertSame('/profile', $updatedUser->dashboard_shortcuts[0]['url']);
+        $this->assertSame('Daily', $updatedUser->dashboard_shortcuts[0]['category']);
+    }
+
+    public function test_user_cannot_import_dashboard_personalization_from_invalid_json_file(): void
+    {
+        $user = User::factory()->create();
+
+        $invalidFile = UploadedFile::fake()->createWithContent(
+            'dashboard-personalization.json',
+            '{invalid json}'
+        );
+
+        $this->withSession(['_token' => 'test-token'])
+            ->actingAs($user)
+            ->post(route('dashboard.personalization.import'), [
+                '_token' => 'test-token',
+                'personalization_file' => $invalidFile,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('personalization_file');
     }
 }
 
